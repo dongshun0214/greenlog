@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GreenLog">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#DCC8AA">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>GreenLog</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#3D4A40; --ink2:#586558;
+  --cream:#FBF6EA; --field:#FFFDF6; --cell:#EFE5D0;
+  --sand:#DCC8AA; --sage:#8FA58A; --sage-d:#4F6857; --moss:#6F8A6B;
+  --clay:#C48E72; --rose:#D3A39C; --mist:#93A9AD; --mus:#CBA95E;
+  --shadow:rgba(61,74,64,.28);
+  --sat:env(safe-area-inset-top); --sab:env(safe-area-inset-bottom);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%;background:var(--sand);overflow-x:hidden}
+body{margin:0;font-family:"LXGW WenKai TC","PingFang TC","Noto Sans TC","Heiti TC",system-ui,sans-serif;color:var(--ink);font-size:16px;line-height:1.45;overflow-x:hidden;touch-action:manipulation}
+body.lock{overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+input,textarea,select{font:inherit;font-size:16px;color:var(--ink)}
+h1,h2,h3,p{margin:0}
+.ic{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic.fill{fill:currentColor}
+.ill{display:block;flex:none;overflow:visible}
+.lf{fill:var(--lf,#6F8A6B)} .lf2{fill:var(--lf2,#CBA95E)} .lfs{stroke:var(--lf,#6F8A6B)} .pot{fill:var(--pot,#C48E72)}
+
+/* pages */
+.page{min-height:100dvh;position:relative;overflow:hidden;padding:calc(var(--sat) + 14px) 16px calc(var(--sab) + 40px)}
+.page.tabbed{padding-bottom:calc(var(--sab) + 104px)}
+.page>*{position:relative;z-index:2}
+.page>.decor{position:absolute;z-index:0;pointer-events:none}
+.bg-list{background:#C7D2BE} .bg-plant{background:#D9CBB3} .bg-ov{background:#D8C5BA} .bg-dex{background:#C3D0CF} .bg-home{background:#DCC8AA}
+
+/* shared bits */
+.card{background:var(--cream);border:2.5px solid var(--ink);border-radius:22px 26px 20px 28px/26px 20px 28px 22px;box-shadow:3px 4px 0 var(--shadow);padding:14px;margin-bottom:16px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.top .sp{flex:1}
+.ib{width:44px;height:44px;border-radius:50%;border:2.5px solid var(--ink);background:var(--cream);display:grid;place-items:center;padding:0;box-shadow:2px 3px 0 var(--shadow)}
+.ib.sm{width:38px;height:38px;box-shadow:none}
+.ib:active,.btn:active{transform:translateY(1px)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 18px;border-radius:16px 20px 15px 21px/20px 15px 21px 16px;border:2.5px solid var(--ink);background:var(--sage-d);color:#FBF6EA;font-weight:700;box-shadow:2px 3px 0 var(--shadow)}
+.btn.ghost{background:var(--cream);color:var(--ink)}
+.btn.warn{background:#A9594F;color:#FBF6EA}
+.btn.sm{min-height:38px;padding:5px 12px;font-size:15px}
+.muted{color:var(--ink2)}
+.hero{display:flex;align-items:center;justify-content:space-between;min-height:104px;margin:4px 0 14px}
+.hero h1{font-size:30px;line-height:1.15}
+.hero p{color:var(--ink);opacity:.85;margin-top:4px;font-size:15px}
+.hero-ill{position:relative;width:132px;height:104px;flex:none}
+.hero-ill .ill{position:absolute}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border:2px solid var(--ink);border-radius:999px;background:var(--cream);font-weight:700;font-size:15px}
+.av{border-radius:50%;border:3px solid var(--ink);overflow:hidden;background:var(--sage);display:grid;place-items:center;flex:none;position:relative}
+.av img{width:100%;height:100%;object-fit:cover;display:block}
+.av.dash{border-style:dashed;background:rgba(251,246,234,.55)}
+.ch{display:grid;place-items:center;border-radius:50%;border:1.5px solid var(--ink);flex:none}
+.ch .ic{stroke:#fff;stroke-width:2.6}
+.empty{text-align:center;padding:14px 6px;color:var(--ink2)}
+.empty .pair{display:flex;justify-content:center;gap:4px;margin-bottom:4px}
+
+/* tab bar */
+.tabs{position:fixed;left:14px;right:14px;bottom:calc(var(--sab) + 12px);z-index:30;display:flex;gap:4px;background:var(--cream);border:2.5px solid var(--ink);border-radius:28px;padding:5px;box-shadow:3px 4px 0 var(--shadow)}
+.tabs button{flex:1;border:0;background:transparent;border-radius:22px;padding:7px 2px 5px;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:13px;font-weight:700}
+.tabs button.on{background:var(--sage-d);color:#FBF6EA}
+
+/* home */
+.home{display:flex;flex-direction:column;justify-content:space-between;min-height:100dvh}
+.home .blob{position:absolute;z-index:0;pointer-events:none}
+.home .ttl{padding:calc(15vh) 0 0 4px}
+.home h1{font-family:"Caveat Brush","LXGW WenKai TC",cursive;font-weight:400;font-size:68px;line-height:1;color:#2F4536;transform:rotate(-3deg);letter-spacing:1px}
+.home .ttl p{font-size:19px;font-weight:700;margin:6px 0 0 6px;color:#2F4536}
+.favs{display:flex;justify-content:center;gap:14px;margin-top:8px}
+.fav{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;width:98px}
+.fav .fn{font-weight:700;font-size:15px;max-width:98px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav.empty .fn{color:var(--ink2);font-weight:400}
+.hint{text-align:center;font-size:14px;color:var(--ink);margin-top:10px}
+.hb{display:flex;gap:10px;margin-top:20px}
+.hb button{flex:1;background:var(--cream);border:2.5px solid var(--ink);border-radius:20px 24px 18px 26px/24px 18px 26px 20px;padding:12px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:4px;font-weight:700;font-size:17px;box-shadow:3px 4px 0 var(--shadow)}
+.hb button .ico{width:40px;height:40px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;color:#FBF6EA}
+
+/* plant list */
+.sec-h{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.sec-h b{font-size:19px}
+.sec-h .cnt{margin-left:auto;font-size:14px;color:var(--ink2)}
+.sec-h .ico{width:34px;height:34px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;color:#FBF6EA}
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 6px}
+.pi{background:none;border:0;padding:0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:4px}
+.pi .nm{font-weight:700;font-size:15px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pi .dy{font-size:13px;color:var(--ink2)}
+.hb2{position:absolute;right:-4px;top:-4px;width:26px;height:26px;border-radius:50%;background:var(--rose);border:2px solid var(--ink);display:grid;place-items:center;color:var(--cream);z-index:3}
+.avw{position:relative}
+
+/* plant detail */
+.phead{text-align:center;padding-top:16px}
+.phead .row{display:flex;align-items:center;justify-content:center;gap:6px}
+.phead h2{font-size:26px;margin-top:10px}
+.phead .days{margin-top:8px}
+.heartb{position:absolute;right:12px;top:12px;width:46px;height:46px;border-radius:50%;border:2.5px solid var(--ink);background:var(--cream);display:grid;place-items:center;color:var(--ink);padding:0}
+.heartb.on{background:var(--rose);color:var(--cream)}
+.seg{display:flex;border:2.5px solid var(--ink);border-radius:16px;overflow:hidden;background:var(--cell)}
+.seg button{flex:1;padding:10px 6px;border:0;background:transparent;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px}
+.seg button.on{background:var(--sage-d);color:#FBF6EA}
+.h3{font-size:18px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.acts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.acts button{border:2px solid var(--ink);border-radius:16px;background:var(--cell);padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700;font-size:14px}
+.cal-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-h b{font-size:18px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal.wk{margin-bottom:4px}
+.cal.wk span{text-align:center;font-size:13px;font-weight:700;color:var(--ink2)}
+.cd{min-height:64px;padding:3px 0 2px;border:2px solid transparent;border-radius:12px;background:var(--cell);display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;font-size:14px;line-height:1.1;min-width:0}
+.cd.today .dn{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--cream)}
+.cd.sel{border-color:var(--ink);background:#E7D7A8}
+.dis{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;width:36px}
+.minis{display:flex;align-items:center;justify-content:center;flex-wrap:nowrap}
+.mini{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink);overflow:hidden;background:var(--sage);margin-left:-5px;flex:none}
+.mini:first-child{margin-left:0}
+.mini img{width:100%;height:100%;object-fit:cover;display:block}
+.more{font-size:10px;margin-left:2px;font-weight:700}
+.dayp{margin-top:12px;padding-top:12px;border-top:2.5px dashed rgba(61,74,64,.45)}
+.dayp-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.rec{display:flex;align-items:center;gap:10px;padding:8px 0}
+.rec+.rec{border-top:1.5px dashed rgba(61,74,64,.3)}
+.rec .t{flex:1;min-width:0}
+.rec .t b{display:block}
+.rec .t small{display:block;color:var(--ink2);font-size:14px;white-space:pre-wrap;word-break:break-word}
+.xb{width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);background:var(--cream);display:grid;place-items:center;padding:0;flex:none}
+.thumbs{display:flex;gap:8px;margin:2px 0 12px}
+.thumbs .th{width:calc((100% - 24px)/4);aspect-ratio:1;border:2.5px solid var(--ink);border-radius:14px;overflow:hidden;background:var(--cell)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap}
+.btnrow .btn{flex:1}
+.linkrow{display:flex;gap:8px;flex-wrap:wrap}
+.linkrow button{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:2px solid var(--ink);border-radius:999px;background:var(--cell);font-weight:700}
+.foot-info{text-align:center;font-size:14px;color:var(--ink);margin:6px 0 10px;opacity:.85}
+.linkbtn{background:none;border:0;color:#8A3F37;font-weight:700;text-decoration:underline;padding:10px}
+
+/* timeline */
+.tl{position:relative;padding-left:28px}
+.tl:before{content:"";position:absolute;left:8px;top:8px;bottom:8px;width:3px;background:var(--ink);opacity:.55;border-radius:2px}
+.ti{position:relative;margin-bottom:18px}
+.ti:before{content:"";position:absolute;left:-28px;top:4px;width:19px;height:19px;border-radius:50%;background:var(--sage-d);border:3px solid var(--ink)}
+.ti .dt{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.ti .dt b{font-size:17px}
+.ti .dt span{font-size:14px;color:var(--ink2)}
+.ti .ph{display:block;width:100%;border:2.5px solid var(--ink);border-radius:18px;overflow:hidden;padding:0;background:var(--cell)}
+.ti .ph img{width:100%;display:block}
+.ti .nt{margin-top:6px;white-space:pre-wrap;word-break:break-word}
+
+/* overview */
+.orow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--cell);border:2px solid var(--ink);border-radius:16px;padding:8px 10px;margin-top:8px}
+.orow .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.orow .cs{display:flex;gap:4px}
+
+/* dex */
+.search{display:block;width:100%;padding:11px 14px;border:2.5px solid var(--ink);border-radius:18px;background:var(--field);min-height:46px;margin-bottom:14px;-webkit-appearance:none;appearance:none}
+.dx{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--cream);border:2.5px solid var(--ink);border-radius:20px 24px 18px 26px/24px 18px 26px 20px;box-shadow:3px 4px 0 var(--shadow);padding:12px;margin-bottom:14px}
+.dx .bd2{flex:1;min-width:0}
+.dx .bd2 b{display:block;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx .bd2 small{display:block;color:var(--ink2);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dx .minis{justify-content:flex-start;margin-top:6px}
+.dx .mini{width:22px;height:22px}
+.dhead{text-align:center;padding-top:8px}
+.dhead h2{font-size:26px;margin-top:10px}
+.txt{white-space:pre-wrap;word-break:break-word}
+.pr{display:flex;justify-content:space-between;gap:12px;padding:8px 0}
+.pr+.pr{border-top:1.5px dashed rgba(61,74,64,.3)}
+.lgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 6px}
+
+/* sheet */
+#sheet{position:fixed;inset:0;z-index:100;display:none}
+#sheet.on{display:block}
+#sheet .bd{position:absolute;inset:0;background:rgba(40,48,42,.55);touch-action:none}
+#sheet .sh{position:absolute;left:0;right:0;bottom:0;max-height:92dvh;background:var(--cream);border:3px solid var(--ink);border-bottom:0;border-radius:28px 28px 0 0;display:flex;flex-direction:column;box-shadow:0 -4px 0 var(--shadow)}
+.sh-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;font-size:20px}
+.sh-b{padding:4px 16px 12px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+.sh-f{display:flex;gap:10px;padding:10px 16px calc(var(--sab) + 12px);border-top:2.5px dashed rgba(61,74,64,.4);background:var(--cream)}
+.sh-f .btn{flex:1}
+.fl{display:block;margin:12px 0;font-weight:700;font-size:15px}
+.fl input,.fl textarea{display:block;width:100%;margin-top:6px;padding:11px 12px;border:2.5px solid var(--ink);border-radius:14px;background:var(--field);font-weight:400;min-height:46px;-webkit-appearance:none;appearance:none;text-align:left}
+.fl textarea{min-height:92px;resize:none;line-height:1.5}
+.pick{display:flex;flex-direction:column;align-items:center;gap:8px;margin:6px 0 4px;font-weight:700;font-size:15px}
+.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:8px 0 4px}
+.tg{border:2.5px solid var(--ink);border-radius:16px;background:var(--cell);padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;font-weight:700;font-size:14px;position:relative}
+.tg.on{background:#E7D7A8;box-shadow:inset 0 0 0 2px var(--ink)}
+.tg.on:after{content:"✓";position:absolute;right:6px;top:2px;font-size:15px}
+.prow{display:flex;gap:8px;margin-top:8px}
+.prow input{flex:1;min-width:0;padding:10px;border:2.5px solid var(--ink);border-radius:14px;background:var(--field);min-height:46px;-webkit-appearance:none;appearance:none}
+.prow input.pp{flex:0 0 38%}
+.chk{display:flex;align-items:center;gap:10px;padding:8px 10px;border:2px solid var(--ink);border-radius:16px;background:var(--cell);margin-top:8px;font-weight:700}
+.chk input{width:24px;height:24px;accent-color:var(--sage-d);flex:none;margin:0}
+.chk .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chk small{font-weight:400;color:var(--ink2)}
+.note-s{font-size:14px;color:var(--ink2);margin-top:8px;line-height:1.55}
+#viewer{position:fixed;inset:0;z-index:120;background:rgba(30,36,32,.92);display:none;align-items:center;justify-content:center;padding:calc(var(--sat) + 12px) 12px calc(var(--sab) + 12px)}
+#viewer.on{display:flex}
+#viewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px}
+#toast{position:fixed;left:50%;top:calc(var(--sat) + 18px);transform:translateX(-50%);background:var(--ink);color:#FBF6EA;padding:10px 18px;border-radius:999px;z-index:200;font-weight:700;display:none;max-width:86vw;text-align:center}
+#toast.on{display:block}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"></div>
+<div id="viewer" data-act="closeViewer"></div>
+<div id="toast"></div>
+
+<script>
+/* ============ 圖案（SVG sprite） ============ */
+const SG="M44 66C40 48 30 38 20 16M36 48L14 42M28 32L36 12M20 16L12 7M20 16L27 6M50 64C50 46 48 32 50 10M50 40L38 30M50 32L62 22M50 10L44 3M50 10L57 3M56 66C60 48 70 38 80 16M64 48L86 42M72 32L64 12M80 16L88 7M80 16L73 6";
+const SPRITE=`<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-water" viewBox="0 0 24 24"><path d="M12 3C12 3 5 10.5 5 15a7 7 0 0 0 14 0C19 10.5 12 3 12 3z"/><path d="M9.5 15.5a2.6 2.6 0 0 0 2.2 2.4"/></symbol>
+<symbol id="i-fert" viewBox="0 0 24 24"><path d="M7 9h10l1.2 11H5.8z"/><path d="M9 9V5.5h6V9"/><path d="M10 14.5h4"/></symbol>
+<symbol id="i-prune" viewBox="0 0 24 24"><circle cx="6" cy="6.5" r="2.8"/><circle cx="6" cy="17.5" r="2.8"/><path d="M8.3 8L20 18M8.3 16L20 6"/></symbol>
+<symbol id="i-divide" viewBox="0 0 24 24"><path d="M3 20.5h18"/><path d="M8 20.5V12M8 12C8 9 5.5 8 4 8c0 3 1.8 4 4 4zM16 20.5V10M16 10c0-3 2.5-4 4-4 0 3-1.8 4-4 4z"/></symbol>
+<symbol id="i-repot" viewBox="0 0 24 24"><path d="M5 10h14l-1.8 10H6.8z"/><path d="M4 10h16"/><path d="M12 10V4.5M12 7.5c0-2 1.5-3 3-3 0 2-1.3 3-3 3z"/></symbol>
+<symbol id="i-note" viewBox="0 0 24 24"><path d="M4 20l1-4.5L16 4.5 19.5 8 8.5 19z"/><path d="M14 6.5l3.5 3.5"/></symbol>
+<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.4A4.2 4.2 0 0 1 12 7.6a4.2 4.2 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z"/></symbol>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h10"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></symbol>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z"/><circle cx="12" cy="13.2" r="3.2"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.5A3.3 3.3 0 0 1 17 18z"/></symbol>
+<symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M14 6l-6 6 6 6"/></symbol>
+<symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M10 6l6 6-6 6"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+
+<symbol id="p-monstera" viewBox="0 0 100 100">
+<path class="lf" stroke="#3D4A40" stroke-width="2.4" stroke-linejoin="round" d="M50 8C60 8 74 13 84 26L60 34L88 38C92 44 92 48 91 52L62 55L91 62C91 68 88 72 84 75L62 74L78 84C70 90 60 93 50 94C40 93 30 90 22 84L38 74L16 75C12 72 9 68 9 62L38 55L9 52C8 48 8 44 12 38L40 34L16 26C26 13 40 8 50 8Z"/>
+<path d="M50 94V20M50 78L30 63M50 78L70 63M50 58L27 47M50 58L73 47" fill="none" stroke="#2c3a2f" stroke-opacity=".35" stroke-width="1.8" stroke-linecap="round"/>
+<g fill="#2c3a2f" opacity=".28"><ellipse cx="36" cy="64" rx="2.6" ry="4.4" transform="rotate(-25 36 64)"/><ellipse cx="64" cy="64" rx="2.6" ry="4.4" transform="rotate(25 64 64)"/><ellipse cx="38" cy="45" rx="2.4" ry="4" transform="rotate(-30 38 45)"/><ellipse cx="62" cy="45" rx="2.4" ry="4" transform="rotate(30 62 45)"/></g>
+</symbol>
+<symbol id="p-monsteraG" viewBox="0 0 100 100"><path fill="#FBF6EA" fill-opacity=".5" d="M50 8C60 8 74 13 84 26L60 34L88 38C92 44 92 48 91 52L62 55L91 62C91 68 88 72 84 75L62 74L78 84C70 90 60 93 50 94C40 93 30 90 22 84L38 74L16 75C12 72 9 68 9 62L38 55L9 52C8 48 8 44 12 38L40 34L16 26C26 13 40 8 50 8Z"/></symbol>
+<symbol id="p-pothos" viewBox="0 0 100 100">
+<path class="lf" stroke="#3D4A40" stroke-width="2.4" stroke-linejoin="round" d="M50 94C18 74 4 48 19 27C30 12 47 17 50 34C53 17 70 12 81 27C96 48 82 74 50 94Z"/>
+<path class="lf2" opacity=".9" d="M29 41C33 32 42 33 44 41C41 47 33 48 29 41ZM61 47C65 38 74 39 76 47C73 53 65 54 61 47ZM44 66C47 60 53 60 56 66C53 72 47 72 44 66Z"/>
+<path d="M50 92V38M50 72L32 52M50 72L68 57" fill="none" stroke="#2c3a2f" stroke-opacity=".35" stroke-width="1.8" stroke-linecap="round"/>
+</symbol>
+<symbol id="p-peperomia" viewBox="0 0 100 100">
+<path d="M50 70C50 56 40 46 30 36M50 70C50 54 50 38 50 26M50 70C52 56 62 48 72 38" fill="none" stroke="#3D4A40" stroke-width="2.4" stroke-linecap="round"/>
+<g class="lf" stroke="#3D4A40" stroke-width="2.4"><ellipse cx="27" cy="31" rx="15" ry="12" transform="rotate(-30 27 31)"/><ellipse cx="50" cy="16" rx="13" ry="11"/><ellipse cx="74" cy="33" rx="15" ry="12" transform="rotate(30 74 33)"/></g>
+<path d="M16 29Q27 21 38 33M42 14Q50 9 58 18M63 32Q74 24 85 35" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>
+<path class="pot" stroke="#3D4A40" stroke-width="2.4" stroke-linejoin="round" d="M31 74H69L64 97H36Z"/>
+<rect class="pot" x="27" y="65" width="46" height="11" rx="3.5" stroke="#3D4A40" stroke-width="2.4"/>
+<path d="M33 70H67" stroke="#fff" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/>
+</symbol>
+<symbol id="p-staghorn" viewBox="0 0 100 100">
+<path d="${SG}" fill="none" stroke="#3D4A40" stroke-width="10.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="lfs" d="${SG}" fill="none" stroke-width="6.2" stroke-linecap="round" stroke-linejoin="round"/>
+<path class="lf2" stroke="#3D4A40" stroke-width="2.4" stroke-linejoin="round" d="M25 100C17 86 21 70 36 64C44 60 56 60 64 64C79 70 83 86 75 100Z"/>
+<path d="M33 76C40 71 46 74 50 71M52 71C57 74 63 71 68 76M36 88C44 83 56 83 64 88" fill="none" stroke="#2c3a2f" stroke-opacity=".35" stroke-width="1.8" stroke-linecap="round"/>
+</symbol>
+<symbol id="p-leaf" viewBox="0 0 100 100">
+<path class="lf" stroke="#3D4A40" stroke-width="2.4" stroke-linejoin="round" d="M50 94C20 72 18 30 50 8C82 30 80 72 50 94Z"/>
+<path d="M50 92V22M50 70L34 54M50 56L66 42" fill="none" stroke="#2c3a2f" stroke-opacity=".35" stroke-width="1.8" stroke-linecap="round"/>
+</symbol>
+</defs></svg>`;
+document.body.insertAdjacentHTML('afterbegin',SPRITE);
+
+/* ============ 工具 ============ */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today=()=>ymd(new Date());
+const WD='日一二三四五六';
+const fmtDate=d=>{const [y,m,dd]=d.split('-');return `${y}/${m}/${dd}（${WD[new Date(+y,+m-1,+dd).getDay()]}）`};
+const dayDiff=(a,b)=>Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/864e5);
+const daysTogether=d=>Math.max(0,dayDiff(d,today())+1);
+const fmtPrice=v=>{v=String(v||'').trim();if(!v)return '';return /^[\d.,\-~ ]+$/.test(v)?'NT$ '+v:v};
+const G={g1:'#6F8A6B',g2:'#8FA58A',g3:'#587560',g4:'#A7B58F',olive:'#9AA874',clay:'#C48E72',rose:'#D3A39C',mist:'#93A9AD',mus:'#CBA95E'};
+
+const TYPES=[
+ {k:'water',n:'澆水',c:'#5F8794'},
+ {k:'fert',n:'施肥',c:'#A8832F'},
+ {k:'prune',n:'修剪',c:'#A86565'},
+ {k:'divide',n:'分株',c:'#5C7F5A'},
+ {k:'repot',n:'換盆/土',c:'#A06549'},
+ {k:'note',n:'備註',c:'#7B6F98'}
+];
+const T=k=>TYPES.find(t=>t.k===k);
+const icon=(n,s=22,cls='')=>`<svg class="ic ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const chip=(k,s=16)=>`<span class="ch" style="width:${s}px;height:${s}px;background:${T(k).c}">${icon(k,Math.round(s*.62))}</span>`;
+function ill(name,w,o={}){
+  const st=`width:${w}px;height:${w}px;${o.lf?`--lf:${o.lf};`:''}${o.lf2?`--lf2:${o.lf2};`:''}${o.pot?`--pot:${o.pot};`:''}${o.rot?`transform:rotate(${o.rot}deg);`:''}${o.st||''}`;
+  return `<svg class="ill ${o.cls||''}" viewBox="0 0 100 100" style="${st}" aria-hidden="true"><use href="#p-${name}"/></svg>`;
+}
+function avatar(o,s,ex=''){
+  const img=o&&(o.avatar||o.img);
+  return `<span class="av ${ex}" style="width:${s}px;height:${s}px">${img?`<img src="${img}" alt="">`:ill('leaf',Math.round(s*.6),{lf:'#DDE6D2'})}</span>`;
+}
+
+/* ============ 資料儲存（IndexedDB） ============ */
+let S={plants:[],dex:[]};
+const DBN='greenlog',STN='kv';
+function idb(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>r.result.createObjectStore(STN);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function idbGet(){const db=await idb();return new Promise((res,rej)=>{const q=db.transaction(STN).objectStore(STN).get('state');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
+async function idbPut(v){const db=await idb();return new Promise((res,rej)=>{const t=db.transaction(STN,'readwrite');t.objectStore(STN).put(v,'state');t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
+async function loadState(){
+  let d=null;
+  try{d=await idbGet()}catch(e){}
+  if(!d){try{d=JSON.parse(localStorage.getItem('greenlog')||'null')}catch(e){}}
+  if(d&&typeof d==='object'){S={plants:Array.isArray(d.plants)?d.plants:[],dex:Array.isArray(d.dex)?d.dex:[]}}
+  S.plants.forEach(p=>{p.logs=p.logs||[];p.photos=p.photos||[];p.method=p.method==='water'?'water':'soil'});
+  S.dex.forEach(x=>{x.plantIds=x.plantIds||[];x.prices=x.prices||[]});
+}
+let saveT=null;
+function persist(){clearTimeout(saveT);saveT=setTimeout(doSave,150)}
+async function doSave(){
+  try{await idbPut(S)}
+  catch(e){try{localStorage.setItem('greenlog',JSON.stringify(S))}catch(_){toast('儲存空間不足，請先匯出備份')}}
+}
+window.addEventListener('pagehide',()=>{if(saveT){clearTimeout(saveT);doSave()}});
+
+/* ============ 圖片處理 ============ */
+function shrink(file,max,square,q){
+  return new Promise((res,rej)=>{
+    const u=URL.createObjectURL(file),im=new Image();
+    im.onload=()=>{
+      try{
+        const w=im.naturalWidth,h=im.naturalHeight;
+        let sx=0,sy=0,sw=w,sh=h;
+        if(square){const s=Math.min(w,h);sx=(w-s)/2;sy=(h-s)/2;sw=s;sh=s}
+        const sc=Math.min(1,max/Math.max(sw,sh));
+        const cw=Math.max(1,Math.round(sw*sc)),ch=Math.max(1,Math.round(sh*sc));
+        const c=document.createElement('canvas');c.width=cw;c.height=ch;
+        c.getContext('2d').drawImage(im,sx,sy,sw,sh,0,0,cw,ch);
+        res(c.toDataURL('image/jpeg',q));
+      }catch(e){rej(e)}finally{URL.revokeObjectURL(u)}
+    };
+    im.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('img'))};
+    im.src=u;
+  });
+}
+
+/* ============ 路由 ============ */
+let nav=0,lastKey=null;const scrollMap={};
+const keyOf=h=>h.replace(/^#\/?/,'');
+function go(p){delete scrollMap[p];nav++;location.hash='#/'+p}
+function goBack(fb){if(nav>0){nav--;history.back()}else{location.hash='#/'+fb}}
+window.addEventListener('scroll',()=>{if(lastKey!==null)scrollMap[lastKey]=window.scrollY},{passive:true});
+window.addEventListener('hashchange',()=>{closeSheet();closeViewer();render()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('#sheet').classList.contains('on'))render()});
+
+/* ============ 狀態 ============ */
+let ui={pid:null,dm:today().slice(0,7),dsel:today(),om:today().slice(0,7),osel:today()};
+let draft={};
+const getPlant=id=>S.plants.find(p=>p.id===id);
+const getDex=id=>S.dex.find(d=>d.id===id);
+const dexOf=pid=>S.dex.filter(d=>d.plantIds.includes(pid));
+const plantSort=(a,b)=>(b.fav?1:0)-(a.fav?1:0)||a.plantDate.localeCompare(b.plantDate)||a.name.localeCompare(b.name,'zh-Hant');
+const shiftMonth=(ym,k)=>{const [y,m]=ym.split('-').map(Number);const d=new Date(y,m-1+k,1);return `${d.getFullYear()}-${pad(d.getMonth()+1)}`};
+function monthCells(ym){const [y,m]=ym.split('-').map(Number);const lead=new Date(y,m-1,1).getDay(),dim=new Date(y,m,0).getDate();const c=[];for(let i=0;i<lead;i++)c.push(null);for(let d=1;d<=dim;d++)c.push(`${ym}-${pad(d)}`);return c}
+
+/* ============ 共用版塊 ============ */
+function calendar(scope,ym,sel,cellFn){
+  const [y,m]=ym.split('-').map(Number);
+  return `<div class="cal-h">
+    <button class="ib sm" data-act="calNav" data-s="${scope}" data-k="-1" aria-label="上個月">${icon('chev-l',20)}</button>
+    <button class="chip" data-act="calToday" data-s="${scope}" style="border-style:dashed" aria-label="回到今天"><b>${y} 年 ${m} 月</b></button>
+    <button class="ib sm" data-act="calNav" data-s="${scope}" data-k="1" aria-label="下個月">${icon('chev-r',20)}</button>
+  </div>
+  <div class="cal wk">${WD.split('').map(x=>`<span>${x}</span>`).join('')}</div>
+  <div class="cal">${monthCells(ym).map(d=>d?cellFn(d,d===sel,d===today()):'<span></span>').join('')}</div>`;
+}
+const tabs=on=>`<nav class="tabs">${[['','home','首頁'],['list','list','列表'],['overview','cal','總覽'],['dex','book','圖鑑']].map(([to,ic,t])=>`<button class="${on===to?'on':''}" data-act="go" data-to="${to}">${icon(ic,22)}<span>${t}</span></button>`).join('')}</nav>`;
+const hero=(t,sub,ills)=>`<div class="hero"><div><h1>${t}</h1><p>${sub}</p></div><div class="hero-ill">${ills}</div></div>`;
+
+/* ============ 首頁 ============ */
+function vHome(){
+  const favs=S.plants.filter(p=>p.fav).sort(plantSort).slice(0,3);
+  const slots=[0,1,2].map(i=>{
+    const p=favs[i];
+    return p?`<button class="fav" data-act="go" data-to="plant/${p.id}">${avatar(p,92)}<span class="fn">${esc(p.name)}</span></button>`
+            :`<button class="fav empty" data-act="go" data-to="list"><span class="av dash" style="width:92px;height:92px;color:var(--ink)">${icon('plus',32)}</span><span class="fn">最愛</span></button>`;
+  }).join('');
+  const btn=(to,ic,t,c)=>`<button data-act="go" data-to="${to}"><span class="ico" style="background:${c}">${icon(ic,22)}</span>${t}</button>`;
+  return `<main class="page bg-home home">
+   <svg class="decor blob" style="left:-70px;top:34px;width:470px;height:430px" viewBox="0 0 240 220" aria-hidden="true"><path fill="#A9B9A2" d="M52 24C96-6 180 0 214 52C244 100 214 170 150 192C86 214 12 186 6 124C2 82 20 46 52 24Z"/></svg>
+   <svg class="decor blob" style="right:-90px;top:46%;width:330px;height:300px" viewBox="0 0 240 220" aria-hidden="true"><path fill="#D7B0A4" d="M70 14C120-6 196 26 214 84C232 142 188 206 126 208C64 210 8 168 12 108C14 68 38 30 70 14Z"/></svg>
+   <div class="decor" style="left:-34px;top:-30px">${ill('monsteraG',230,{rot:-10})}</div>
+   <div class="decor" style="right:-70px;top:40%">${ill('monsteraG',190,{rot:28})}</div>
+   <div class="decor" style="left:-30px;top:-22px">${ill('monstera',150,{lf:G.g3,rot:-24})}</div>
+   <div class="decor" style="right:62px;top:-16px">${ill('pothos',82,{lf:G.g4,lf2:G.mus,rot:20})}</div>
+   <div class="decor" style="right:-22px;top:18px">${ill('pothos',120,{lf:G.g1,lf2:'#D9C27A',rot:36})}</div>
+   <div class="decor" style="left:-18px;bottom:158px">${ill('staghorn',128,{lf:G.g1,lf2:G.g4,rot:-6})}</div>
+   <div class="decor" style="right:-6px;bottom:150px">${ill('peperomia',112,{lf:G.g2,pot:G.clay,rot:4})}</div>
+   <div class="decor" style="left:126px;bottom:150px">${ill('leaf',40,{lf:G.mus,rot:-30})}</div>
+   <button class="ib" data-act="backup" style="position:absolute;right:16px;top:calc(var(--sat) + 190px);z-index:3" aria-label="備份">${icon('cloud',22)}</button>
+   <header class="ttl"><h1>GreenLog</h1><p>植物紀錄本</p></header>
+   <section><div class="favs">${slots}</div>${favs.length?'':'<p class="hint">在植物頁點愛心，就會出現在這裡</p>'}</section>
+   <nav class="hb">${btn('list','list','列表',G.g3)}${btn('overview','cal','總覽',G.clay)}${btn('dex','book','圖鑑','#6E8E96')}</nav>
+  </main>`;
+}
+
+/* ============ 植物列表 ============ */
+function plantItem(p){
+  return `<button class="pi" data-act="go" data-to="plant/${p.id}"><span class="avw">${avatar(p,84)}${p.fav?`<span class="hb2">${icon('heart',14,'fill')}</span>`:''}</span><span class="nm">${esc(p.name)}</span><span class="dy">已陪伴 ${daysTogether(p.plantDate)} 天</span></button>`;
+}
+function vList(){
+  const soil=S.plants.filter(p=>p.method==='soil').sort(plantSort),water=S.plants.filter(p=>p.method==='water').sort(plantSort);
+  const sect=(t,ic,col,arr,empty)=>`<section class="card"><div class="sec-h"><span class="ico" style="background:${col}">${icon(ic,20)}</span><b>${t}</b><span class="cnt">${arr.length} 株</span></div>
+    ${arr.length?`<div class="pg">${arr.map(plantItem).join('')}</div>`:`<div class="empty"><div class="pair">${ill('leaf',34,{lf:G.g4,rot:-20})}${ill('leaf',34,{lf:G.g2,rot:20})}</div>${empty}</div>`}</section>`;
+  return `<main class="page bg-list tabbed">
+   <div class="decor" style="right:-30px;top:340px">${ill('monsteraG',150,{rot:20})}</div>
+   <div class="decor" style="left:-40px;top:620px">${ill('monsteraG',150,{rot:-20})}</div>
+   <div class="top"><button class="ib" data-act="back" data-fb="" aria-label="返回">${icon('back',24)}</button><div class="sp"></div><button class="btn" data-act="addPlant">${icon('plus',18)}新增植物</button></div>
+   ${hero('我的植物',`<span class="chip" style="margin-top:6px">共 ${S.plants.length} 株</span>`,`${ill('pothos',72,{lf:G.g1,lf2:G.mus,rot:-16,st:'right:62px;top:2px'})}${ill('monstera',84,{lf:G.g3,rot:14,st:'right:0;top:-4px'})}${ill('peperomia',70,{lf:G.g2,pot:G.clay,st:'right:48px;bottom:-6px'})}`)}
+   ${sect('土培','repot',G.clay,soil,'還沒有土培植物')}
+   ${sect('水培','water','#5F8794',water,'還沒有水培植物')}
+   ${tabs('list')}
+  </main>`;
+}
+
+/* ============ 植物細節 ============ */
+function vPlant(id){
+  const p=getPlant(id);if(!p)return vMissing();
+  if(ui.pid!==id){ui.pid=id;ui.dm=today().slice(0,7);ui.dsel=today()}
+  const logsBy={};p.logs.forEach(l=>{(logsBy[l.date]=logsBy[l.date]||[]).push(l)});
+  const cell=(d,sel,tod)=>{
+    const ts=[...new Set((logsBy[d]||[]).map(l=>l.type))];
+    const shown=ts.slice(0,4);
+    return `<button class="cd ${sel?'sel':''} ${tod?'today':''}" data-act="pickDay" data-s="d" data-d="${d}"><span class="dn">${+d.slice(8)}</span><span class="dis">${shown.map(k=>chip(k,16)).join('')}</span></button>`;
+  };
+  const dl=(logsBy[ui.dsel]||[]);
+  const recs=dl.length?dl.map(l=>`<div class="rec">${chip(l.type,32)}<div class="t"><b>${T(l.type).n}</b>${l.note?`<small>${esc(l.note)}</small>`:''}</div><button class="xb" data-act="delRec" data-id="${l.id}" aria-label="刪除">${icon('trash',18)}</button></div>`).join(''):`<p class="muted" style="padding:4px 0 2px">這天還沒有紀錄</p>`;
+  const photos=[...p.photos].sort((a,b)=>b.date.localeCompare(a.date));
+  const dx=dexOf(id);
+  const info=[p.price?`價格 ${fmtPrice(p.price)}`:'',`種植日期 ${p.plantDate.replace(/-/g,'/')}`].filter(Boolean).join('　·　');
+  return `<main class="page bg-plant">
+   <div class="decor" style="left:-30px;top:60px">${ill('monsteraG',150,{rot:-20})}</div>
+   <div class="decor" style="right:-34px;top:300px">${ill('monsteraG',150,{rot:24})}</div>
+   <div class="top"><button class="ib" data-act="back" data-fb="list" aria-label="返回">${icon('back',24)}</button><div class="sp"></div><button class="ib" data-act="editPlant" data-id="${id}" aria-label="編輯">${icon('note',22)}</button></div>
+   <section class="card phead" style="position:relative">
+     <button class="heartb ${p.fav?'on':''}" data-act="toggleFav" aria-label="我的最愛">${icon('heart',24,p.fav?'fill':'')}</button>
+     <div class="row">${ill('leaf',44,{lf:G.g4,rot:-35})}${avatar(p,128)}${ill('leaf',44,{lf:G.g2,rot:35})}</div>
+     <h2>${esc(p.name)}</h2>
+     <div class="days"><span class="chip">${icon('heart',16,'fill')} 已陪伴 ${daysTogether(p.plantDate)} 天</span></div>
+     <div class="seg" style="margin-top:14px"><button class="${p.method==='soil'?'on':''}" data-act="setMethod" data-v="soil">${icon('repot',20)}土培</button><button class="${p.method==='water'?'on':''}" data-act="setMethod" data-v="water">${icon('water',20)}水培</button></div>
+   </section>
+   <section class="card"><div class="h3">${ill('leaf',24,{lf:G.g2})}今天做了什麼？</div>
+     <div class="acts">${TYPES.map(t=>`<button data-act="addRec" data-t="${t.k}" data-d="${today()}">${chip(t.k,34)}${t.n}</button>`).join('')}</div>
+   </section>
+   <section class="card"><div class="h3">${icon('cal',22)}照護日曆</div>
+     ${calendar('d',ui.dm,ui.dsel,cell)}
+     <div class="dayp"><div class="dayp-h"><b>${fmtDate(ui.dsel)}</b><button class="btn sm" data-act="addRec" data-d="${ui.dsel}">${icon('plus',16)}新增紀錄</button></div>${recs}</div>
+   </section>
+   <section class="card"><div class="h3">${icon('cam',22)}成長時間線<span class="muted" style="font-size:14px;font-weight:400;margin-left:auto">${photos.length} 張</span></div>
+     ${photos.length?`<div class="thumbs">${photos.slice(0,4).map(ph=>`<div class="th"><img src="${ph.img}" alt=""></div>`).join('')}</div>`:`<p class="muted" style="margin-bottom:12px">還沒有照片，記錄一下它的成長吧</p>`}
+     <div class="btnrow"><button class="btn ghost" data-act="go" data-to="plant/${id}/timeline">看時間線</button><button class="btn" data-act="addPhoto">${icon('plus',18)}新增照片</button></div>
+   </section>
+   ${dx.length?`<section class="card"><div class="h3">${icon('book',22)}圖鑑</div><div class="linkrow">${dx.map(x=>`<button data-act="go" data-to="dex/${x.id}">${icon('link',16)}${esc(x.name)}</button>`).join('')}</div></section>`:''}
+   <p class="foot-info">${info}</p>
+   <div style="text-align:center"><button class="linkbtn" data-act="delPlant" data-id="${id}">刪除這株植物</button></div>
+  </main>`;
+}
+
+/* ============ 時間線 ============ */
+function vTimeline(id){
+  const p=getPlant(id);if(!p)return vMissing();
+  const photos=[...p.photos].sort((a,b)=>b.date.localeCompare(a.date));
+  return `<main class="page bg-plant">
+   <div class="top"><button class="ib" data-act="back" data-fb="plant/${id}" aria-label="返回">${icon('back',24)}</button><div class="sp"></div><button class="btn" data-act="addPhoto">${icon('plus',18)}新增照片</button></div>
+   ${hero('成長時間線',esc(p.name),`${ill('monstera',84,{lf:G.g3,rot:14,st:'right:0;top:-4px'})}${ill('leaf',50,{lf:G.g4,rot:-25,st:'right:76px;bottom:4px'})}`)}
+   ${photos.length?`<div class="tl">${photos.map(ph=>{const n=dayDiff(p.plantDate,ph.date)+1;return `<div class="ti"><div class="dt"><b>${ph.date.replace(/-/g,'/')}</b><span>${n>0?`陪伴第 ${n} 天`:'種植前'}</span><button class="xb" style="margin-left:auto" data-act="delPhoto" data-id="${ph.id}" aria-label="刪除">${icon('trash',18)}</button></div><button class="ph" data-act="viewPhoto" data-id="${ph.id}"><img src="${ph.img}" alt=""></button>${ph.note?`<p class="nt">${esc(ph.note)}</p>`:''}</div>`}).join('')}</div>`
+     :`<section class="card empty"><div class="pair">${ill('leaf',44,{lf:G.g4,rot:-20})}${ill('leaf',44,{lf:G.g2,rot:20})}</div>還沒有照片<br>點右上角新增第一張吧</section>`}
+  </main>`;
+}
+
+/* ============ 總覽 ============ */
+function vOverview(){
+  const by={};
+  S.plants.forEach(p=>p.logs.forEach(l=>{const m=(by[l.date]=by[l.date]||{});(m[p.id]=m[p.id]||new Set()).add(l.type)}));
+  const cell=(d,sel,tod)=>{
+    const ids=Object.keys(by[d]||{}).map(getPlant).filter(Boolean);
+    const sh=ids.slice(0,3);
+    return `<button class="cd ${sel?'sel':''} ${tod?'today':''}" data-act="pickDay" data-s="o" data-d="${d}"><span class="dn">${+d.slice(8)}</span>${ids.length?`<span class="minis">${sh.map(p=>`<span class="mini">${p.avatar?`<img src="${p.avatar}" alt="">`:''}</span>`).join('')}${ids.length>3?`<span class="more">+${ids.length-3}</span>`:''}</span>`:''}</button>`;
+  };
+  const m=by[ui.osel]||{};
+  const rows=Object.keys(m).map(getPlant).filter(Boolean).map(p=>`<button class="orow" data-act="go" data-to="plant/${p.id}">${avatar(p,44)}<span class="nm">${esc(p.name)}</span><span class="cs">${[...m[p.id]].map(k=>chip(k,22)).join('')}</span>${icon('chev-r',18)}</button>`).join('');
+  return `<main class="page bg-ov tabbed">
+   <div class="decor" style="left:-40px;top:520px">${ill('monsteraG',150,{rot:-20})}</div>
+   <div class="top"><button class="ib" data-act="back" data-fb="" aria-label="返回">${icon('back',24)}</button></div>
+   ${hero('總覽','哪天照顧了哪株植物',`${ill('peperomia',76,{lf:G.g2,pot:G.clay,st:'right:56px;bottom:-4px'})}${ill('pothos',82,{lf:G.g1,lf2:G.mus,rot:22,st:'right:0;top:-2px'})}`)}
+   <section class="card">${calendar('o',ui.om,ui.osel,cell)}
+     <div class="dayp"><div class="dayp-h"><b>${fmtDate(ui.osel)}</b></div>${rows||'<p class="muted">這天沒有照護紀錄</p>'}</div>
+   </section>
+   ${tabs('overview')}
+  </main>`;
+}
+
+/* ============ 圖鑑 ============ */
+function vDex(){
+  const items=S.dex.map(x=>{
+    const ps=x.plantIds.map(getPlant).filter(Boolean);
+    const snip=(x.traits||x.care||x.note||'').replace(/\s+/g,' ').slice(0,40);
+    return `<button class="dx" data-act="go" data-to="dex/${x.id}" data-q="${esc((x.name+' '+(x.traits||'')+' '+(x.care||'')).toLowerCase())}">${avatar(x,64)}<span class="bd2"><b>${esc(x.name)}</b>${snip?`<small>${esc(snip)}</small>`:''}${ps.length?`<span class="minis">${ps.slice(0,5).map(p=>`<span class="mini">${p.avatar?`<img src="${p.avatar}" alt="">`:''}</span>`).join('')}${ps.length>5?`<span class="more">+${ps.length-5}</span>`:''}</span>`:''}</span>${icon('chev-r',18)}</button>`;
+  }).join('');
+  return `<main class="page bg-dex tabbed">
+   <div class="decor" style="right:-34px;top:420px">${ill('monsteraG',150,{rot:24})}</div>
+   <div class="top"><button class="ib" data-act="back" data-fb="" aria-label="返回">${icon('back',24)}</button><div class="sp"></div><button class="btn" data-act="dexForm" data-id="">${icon('plus',18)}新增圖鑑</button></div>
+   ${hero('植物圖鑑','特性・照護・花市價格',`${ill('staghorn',92,{lf:G.g1,lf2:G.g4,st:'right:0;top:0'})}${ill('leaf',50,{lf:G.mus,rot:-28,st:'right:84px;bottom:2px'})}`)}
+   ${S.dex.length?`<input class="search" id="q" type="search" placeholder="搜尋圖鑑" autocomplete="off"><div id="dxl">${items}</div><p class="muted" id="noq" style="display:none;text-align:center">找不到符合的圖鑑</p>`
+     :`<section class="card empty"><div class="pair">${ill('staghorn',64,{lf:G.g1,lf2:G.g4})}${ill('peperomia',60,{lf:G.g2,pot:G.clay})}</div>還沒有圖鑑<br>把查到的植物資料記在這裡吧</section>`}
+   ${tabs('dex')}
+  </main>`;
+}
+function vDexItem(id){
+  const x=getDex(id);if(!x)return vMissing();
+  const ps=x.plantIds.map(getPlant).filter(Boolean);
+  const blk=(t,v)=>v?`<section class="card"><div class="h3">${ill('leaf',24,{lf:G.g2})}${t}</div><p class="txt">${esc(v)}</p></section>`:'';
+  const prices=x.prices.filter(r=>r.m||r.p);
+  return `<main class="page bg-dex">
+   <div class="decor" style="left:-30px;top:60px">${ill('monsteraG',150,{rot:-20})}</div>
+   <div class="top"><button class="ib" data-act="back" data-fb="dex" aria-label="返回">${icon('back',24)}</button><div class="sp"></div><button class="ib" data-act="dexForm" data-id="${id}" aria-label="編輯">${icon('note',22)}</button></div>
+   <section class="card dhead"><div style="display:flex;justify-content:center;align-items:center;gap:6px">${ill('leaf',40,{lf:G.g4,rot:-35})}${avatar(x,120)}${ill('leaf',40,{lf:G.g2,rot:35})}</div><h2>${esc(x.name)}</h2></section>
+   <section class="card"><div class="h3">${icon('link',22)}我的植物 <span class="muted" style="font-size:14px;font-weight:400;margin-left:auto">${ps.length} 株</span></div>
+     ${ps.length?`<div class="lgrid">${ps.map(p=>`<button class="pi" data-act="go" data-to="plant/${p.id}">${avatar(p,76)}<span class="nm">${esc(p.name)}</span></button>`).join('')}</div>`:'<p class="muted">還沒有連結自己的植物，按右上角編輯可以勾選</p>'}
+   </section>
+   ${blk('特性',x.traits)}${blk('照護方式',x.care)}
+   ${prices.length?`<section class="card"><div class="h3">${ill('leaf',24,{lf:G.mus})}花市價格</div>${prices.map(r=>`<div class="pr"><span>${esc(r.m||'—')}</span><b>${esc(fmtPrice(r.p)||'—')}</b></div>`).join('')}</section>`:''}
+   ${blk('備註',x.note)}
+   <div style="text-align:center"><button class="linkbtn" data-act="delDex" data-id="${id}">刪除這筆圖鑑</button></div>
+  </main>`;
+}
+function vMissing(){return `<main class="page bg-home"><div class="top"><button class="ib" data-act="go" data-to="" aria-label="首頁">${icon('home',22)}</button></div><section class="card empty">找不到這個頁面<br>可能已經被刪除了</section></main>`}
+
+/* ============ 渲染 ============ */
+function render(){
+  const key=keyOf(location.hash);const [a,b,c]=key.split('/');
+  let h;
+  if(!a)h=vHome();
+  else if(a==='list')h=vList();
+  else if(a==='plant')h=c==='timeline'?vTimeline(b):vPlant(b);
+  else if(a==='overview')h=vOverview();
+  else if(a==='dex')h=b?vDexItem(b):vDex();
+  else h=vHome();
+  const same=key===lastKey,y=same?window.scrollY:(scrollMap[key]||0);
+  lastKey=null;
+  $('#app').innerHTML=h;
+  window.scrollTo(0,y);
+  lastKey=key;
+}
+
+/* ============ 彈窗 / 提示 ============ */
+function openSheet(html){$('#sheet').innerHTML=`<div class="bd" data-act="closeSheet"></div><div class="sh" role="dialog">${html}</div>`;$('#sheet').classList.add('on');document.body.classList.add('lock')}
+function closeSheet(){const s=$('#sheet');s.classList.remove('on');s.innerHTML='';document.body.classList.remove('lock')}
+function closeViewer(){$('#viewer').classList.remove('on');$('#viewer').innerHTML=''}
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2200)}
+const shHead=t=>`<div class="sh-h"><b>${t}</b><button class="ib sm" data-act="closeSheet" aria-label="關閉">${icon('close',20)}</button></div>`;
+const pvBox=(img,s)=>`<span class="av" id="pv" style="width:${s}px;height:${s}px">${img?`<img src="${img}" alt="">`:`<span style="display:grid;place-items:center;color:var(--ink)">${icon('cam',s*.34)}</span>`}</span>`;
+function setPv(img){const pv=$('#pv');if(pv)pv.innerHTML=`<img src="${img}" alt="">`}
+
+/* 植物表單 */
+function plantForm(id){
+  const p=id?getPlant(id):null;
+  draft={img:p?.avatar||'',method:p?.method||'soil'};
+  openSheet(`${shHead(p?'編輯植物':'新增植物')}
+   <div class="sh-b">
+    <label class="pick" for="f-img">${pvBox(draft.img,104)}<span>點一下上傳頭貼</span></label>
+    <input id="f-img" type="file" accept="image/*" hidden data-chg="avatar">
+    <label class="fl">名稱<input id="f-name" value="${esc(p?.name||'')}" placeholder="例：龜背芋 小綠" maxlength="30" autocomplete="off"></label>
+    <label class="fl">價格（選填）<input id="f-price" inputmode="decimal" value="${esc(p?.price||'')}" placeholder="例：350" autocomplete="off"></label>
+    <label class="fl">種植日期<input id="f-date" type="date" value="${p?.plantDate||today()}"></label>
+    <div class="fl">栽培方式<div class="seg" style="margin-top:6px" id="f-seg"><button class="${draft.method==='soil'?'on':''}" data-act="seg" data-v="soil">土培</button><button class="${draft.method==='water'?'on':''}" data-act="seg" data-v="water">水培</button></div></div>
+   </div>
+   <div class="sh-f"><button class="btn ghost" data-act="closeSheet">取消</button><button class="btn" data-act="savePlant" data-id="${id||''}">儲存</button></div>`);
+}
+/* 照護紀錄表單 */
+function recForm(type,date){
+  draft={types:new Set(type?[type]:[])};
+  openSheet(`${shHead('新增紀錄')}
+   <div class="sh-b">
+    <div class="tgrid">${TYPES.map(t=>`<button class="tg ${draft.types.has(t.k)?'on':''}" data-act="tgType" data-t="${t.k}">${chip(t.k,34)}${t.n}</button>`).join('')}</div>
+    <p class="note-s">可以一次選多個</p>
+    <label class="fl">日期<input id="r-date" type="date" value="${date||today()}"></label>
+    <label class="fl">備註（選填）<textarea id="r-note" placeholder="例：換成 5 吋盆、加了緩效肥"></textarea></label>
+   </div>
+   <div class="sh-f"><button class="btn ghost" data-act="closeSheet">取消</button><button class="btn" data-act="saveRec">儲存</button></div>`);
+}
+/* 照片表單 */
+function photoForm(){
+  draft={img:''};
+  openSheet(`${shHead('新增成長照片')}
+   <div class="sh-b">
+    <label class="pick" for="f-img2"><span class="av" id="pv" style="width:150px;height:150px;border-radius:22px"><span style="color:var(--ink)">${icon('cam',48)}</span></span><span>點一下選擇或拍照</span></label>
+    <input id="f-img2" type="file" accept="image/*" hidden data-chg="photo">
+    <label class="fl">日期<input id="p-date" type="date" value="${today()}"></label>
+    <label class="fl">備註（選填）<textarea id="p-note" placeholder="例：長出新葉了"></textarea></label>
+   </div>
+   <div class="sh-f"><button class="btn ghost" data-act="closeSheet">取消</button><button class="btn" data-act="savePhoto">儲存</button></div>`);
+}
+/* 圖鑑表單 */
+function priceRows(){return draft.prices.map((r,i)=>`<div class="prow"><input class="pm" value="${esc(r.m)}" placeholder="花市／店家" autocomplete="off"><input class="pp" value="${esc(r.p)}" placeholder="價格" inputmode="decimal" autocomplete="off"><button class="xb" style="width:46px;height:46px" data-act="delPrice" data-i="${i}" aria-label="移除">${icon('close',18)}</button></div>`).join('')}
+function syncPrices(){const ms=$$('#pr-rows .pm'),ps=$$('#pr-rows .pp');draft.prices=ms.map((m,i)=>({m:m.value,p:ps[i].value}))}
+function dexForm(id){
+  const x=id?getDex(id):null;
+  draft={img:x?.img||'',prices:x?.prices?.length?x.prices.map(r=>({...r})):[{m:'',p:''}]};
+  const linked=new Set(x?.plantIds||[]);
+  const plants=[...S.plants].sort(plantSort);
+  openSheet(`${shHead(x?'編輯圖鑑':'新增圖鑑')}
+   <div class="sh-b">
+    <label class="pick" for="f-img3">${pvBox(draft.img,104)}<span>點一下上傳圖片</span></label>
+    <input id="f-img3" type="file" accept="image/*" hidden data-chg="deximg">
+    <label class="fl">植物名稱<input id="d-name" value="${esc(x?.name||'')}" placeholder="例：龜背芋" maxlength="30" autocomplete="off"></label>
+    <label class="fl">特性<textarea id="d-traits" placeholder="例：喜歡明亮散射光，葉片會裂">${esc(x?.traits||'')}</textarea></label>
+    <label class="fl">照護方式<textarea id="d-care" placeholder="例：土乾透再澆水，夏天每週施肥一次">${esc(x?.care||'')}</textarea></label>
+    <div class="fl">花市價格<div id="pr-rows">${priceRows()}</div><button class="btn ghost sm" style="margin-top:8px" data-act="addPrice">${icon('plus',16)}新增一筆價格</button></div>
+    <label class="fl">備註<textarea id="d-note" placeholder="其他想記的事">${esc(x?.note||'')}</textarea></label>
+    <div class="fl">連結我的植物（可複選）
+     ${plants.length?plants.map(p=>`<label class="chk">${avatar(p,40)}<span class="nm">${esc(p.name)}</span><small>${p.method==='water'?'水培':'土培'}</small><input type="checkbox" name="lp" value="${p.id}" ${linked.has(p.id)?'checked':''}></label>`).join(''):`<p class="note-s">還沒有植物可以連結，先去新增植物吧</p>`}
+    </div>
+   </div>
+   <div class="sh-f"><button class="btn ghost" data-act="closeSheet">取消</button><button class="btn" data-act="saveDex" data-id="${id||''}">儲存</button></div>`);
+}
+/* 備份 */
+function backupSheet(){
+  openSheet(`${shHead('備份與搬家')}
+   <div class="sh-b">
+    <p class="note-s" style="margin-top:0">資料只存在這支手機的這個瀏覽器裡。建議用 Safari 的「分享 → 加入主畫面」後再使用，並定期匯出備份。主畫面版和 Safari 的資料是分開的，要搬過去請先匯出再匯入。</p>
+    <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="exportData">匯出備份</button><label class="btn ghost" for="f-imp" style="cursor:pointer">匯入備份</label></div>
+    <input id="f-imp" type="file" accept=".json,application/json" hidden data-chg="import">
+    <p class="note-s">目前共 ${S.plants.length} 株植物、${S.dex.length} 筆圖鑑。</p>
+   </div>`);
+}
+
+/* ============ 動作 ============ */
+const A={
+  go:d=>go(d.to),
+  back:d=>goBack(d.fb||''),
+  closeSheet:()=>closeSheet(),
+  closeViewer:()=>closeViewer(),
+  backup:()=>backupSheet(),
+  addPlant:()=>plantForm(''),
+  editPlant:d=>plantForm(d.id),
+  seg:(d,t)=>{draft.method=d.v;$$('#f-seg button').forEach(b=>b.classList.toggle('on',b===t))},
+  savePlant:d=>{
+    const name=$('#f-name').value.trim(),date=$('#f-date').value;
+    if(!name)return toast('請輸入名稱');
+    if(!date)return toast('請選擇種植日期');
+    const price=$('#f-price').value.trim();
+    if(d.id){const p=getPlant(d.id);Object.assign(p,{name,price,plantDate:date,avatar:draft.img,method:draft.method})}
+    else S.plants.push({id:uid(),name,price,plantDate:date,avatar:draft.img,method:draft.method,fav:false,logs:[],photos:[]});
+    persist();closeSheet();render();toast('已儲存');
+  },
+  toggleFav:()=>{const p=getPlant(ui.pid);if(!p)return;p.fav=!p.fav;persist();render();toast(p.fav?'已加入我的最愛':'已取消最愛')},
+  setMethod:d=>{const p=getPlant(ui.pid);if(!p||p.method===d.v)return;p.method=d.v;persist();render();toast(d.v==='water'?'已改成水培':'已改成土培')},
+  delPlant:d=>{
+    const p=getPlant(d.id);if(!p)return;
+    if(!confirm(`確定要刪除「${p.name}」嗎？紀錄和照片都會一起刪除。`))return;
+    S.plants=S.plants.filter(x=>x.id!==d.id);S.dex.forEach(x=>{x.plantIds=x.plantIds.filter(i=>i!==d.id)});
+    persist();nav=0;location.hash='#/list';
+  },
+  calNav:d=>{const k=+d.k;if(d.s==='d')ui.dm=shiftMonth(ui.dm,k);else ui.om=shiftMonth(ui.om,k);render()},
+  calToday:d=>{if(d.s==='d'){ui.dm=today().slice(0,7);ui.dsel=today()}else{ui.om=today().slice(0,7);ui.osel=today()}render()},
+  pickDay:d=>{if(d.s==='d')ui.dsel=d.d;else ui.osel=d.d;render()},
+  addRec:d=>recForm(d.t||'',d.d||ui.dsel),
+  tgType:(d,t)=>{if(draft.types.has(d.t))draft.types.delete(d.t);else draft.types.add(d.t);t.classList.toggle('on')},
+  saveRec:()=>{
+    const p=getPlant(ui.pid);if(!p)return;
+    const date=$('#r-date').value,note=$('#r-note').value.trim();
+    if(!draft.types.size)return toast('請至少選一個項目');
+    if(!date)return toast('請選擇日期');
+    if(draft.types.has('note')&&!note)return toast('選了備註，請寫點內容');
+    [...draft.types].forEach(k=>p.logs.push({id:uid(),date,type:k,note:k==='note'?note:(draft.types.has('note')?'':note)}));
+    ui.dsel=date;ui.dm=date.slice(0,7);
+    persist();closeSheet();render();toast('已記錄');
+  },
+  delRec:d=>{const p=getPlant(ui.pid);if(!p)return;if(!confirm('刪除這筆紀錄？'))return;p.logs=p.logs.filter(l=>l.id!==d.id);persist();render()},
+  addPhoto:()=>photoForm(),
+  savePhoto:()=>{
+    const p=getPlant(ui.pid);if(!p)return;
+    const date=$('#p-date').value;
+    if(!draft.img)return toast('請先選一張照片');
+    if(!date)return toast('請選擇日期');
+    p.photos.push({id:uid(),date,img:draft.img,note:$('#p-note').value.trim()});
+    persist();closeSheet();render();toast('已新增照片');
+  },
+  delPhoto:d=>{const p=getPlant(ui.pid);if(!p)return;if(!confirm('刪除這張照片？'))return;p.photos=p.photos.filter(x=>x.id!==d.id);persist();render()},
+  viewPhoto:d=>{const p=getPlant(ui.pid);const ph=p&&p.photos.find(x=>x.id===d.id);if(!ph)return;$('#viewer').innerHTML=`<img src="${ph.img}" alt="">`;$('#viewer').classList.add('on')},
+  dexForm:d=>dexForm(d.id),
+  addPrice:()=>{syncPrices();draft.prices.push({m:'',p:''});$('#pr-rows').innerHTML=priceRows()},
+  delPrice:d=>{syncPrices();draft.prices.splice(+d.i,1);if(!draft.prices.length)draft.prices.push({m:'',p:''});$('#pr-rows').innerHTML=priceRows()},
+  saveDex:d=>{
+    const name=$('#d-name').value.trim();
+    if(!name)return toast('請輸入植物名稱');
+    syncPrices();
+    const data={name,img:draft.img,traits:$('#d-traits').value.trim(),care:$('#d-care').value.trim(),note:$('#d-note').value.trim(),
+      prices:draft.prices.filter(r=>r.m.trim()||r.p.trim()).map(r=>({m:r.m.trim(),p:r.p.trim()})),
+      plantIds:$$('input[name=lp]:checked').map(i=>i.value)};
+    if(d.id)Object.assign(getDex(d.id),data);else S.dex.push({id:uid(),...data});
+    persist();closeSheet();render();toast('已儲存');
+  },
+  delDex:d=>{const x=getDex(d.id);if(!x)return;if(!confirm(`確定要刪除「${x.name}」的圖鑑嗎？`))return;S.dex=S.dex.filter(y=>y.id!==d.id);persist();nav=0;location.hash='#/dex'},
+  exportData:async()=>{
+    const json=JSON.stringify({app:'GreenLog',v:1,exported:new Date().toISOString(),...S});
+    const name=`greenlog-backup-${today()}.json`;
+    try{
+      const f=new File([json],name,{type:'application/json'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'GreenLog 備份'});return}
+    }catch(e){if(e&&e.name==='AbortError')return}
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([json],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();a.remove();
+  }
+};
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const f=A[t.dataset.act];if(f)f(t.dataset,t,e);
+});
+document.addEventListener('change',async e=>{
+  const t=e.target,k=t.dataset&&t.dataset.chg;if(!k)return;
+  const file=t.files&&t.files[0];if(!file)return;
+  try{
+    if(k==='avatar'||k==='deximg'){draft.img=await shrink(file,360,true,.82);setPv(draft.img)}
+    else if(k==='photo'){draft.img=await shrink(file,1280,false,.74);const pv=$('#pv');if(pv){pv.style.width='100%';pv.style.height='auto';pv.style.borderRadius='18px';pv.innerHTML=`<img src="${draft.img}" alt="" style="max-height:260px;object-fit:contain">`}}
+    else if(k==='import'){
+      const d=JSON.parse(await file.text());
+      if(!d||!Array.isArray(d.plants)||!Array.isArray(d.dex))throw new Error('format');
+      if(!confirm(`匯入會取代目前的資料（${d.plants.length} 株植物、${d.dex.length} 筆圖鑑），確定嗎？`)){t.value='';return}
+      S={plants:d.plants,dex:d.dex};await loadStateFix();await doSave();closeSheet();render();toast('已匯入');
+    }
+  }catch(err){toast(k==='import'?'檔案格式不對，無法匯入':'圖片讀取失敗，請換一張')}
+  t.value='';
+});
+async function loadStateFix(){S.plants.forEach(p=>{p.logs=p.logs||[];p.photos=p.photos||[];p.method=p.method==='water'?'water':'soil';p.plantDate=p.plantDate||today()});S.dex.forEach(x=>{x.plantIds=x.plantIds||[];x.prices=x.prices||[]})}
+document.addEventListener('input',e=>{
+  if(e.target.id!=='q')return;
+  const q=e.target.value.trim().toLowerCase();let n=0;
+  $$('#dxl .dx').forEach(el=>{const hit=!q||el.dataset.q.includes(q);el.style.display=hit?'':'none';if(hit)n++});
+  $('#noq').style.display=n?'none':'block';
+});
+document.addEventListener('focusin',e=>{
+  if(e.target.closest('#sheet')&&/INPUT|TEXTAREA/.test(e.target.tagName))setTimeout(()=>{try{e.target.scrollIntoView({block:'center',behavior:'smooth'})}catch(_){}},320);
+});
+
+/* ============ 啟動 ============ */
+(async()=>{
+  await loadState();
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+  render();
+})();
+</script>
+</body>
+</html>
