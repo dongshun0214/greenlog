@@ -8,7 +8,8 @@
 <meta name="apple-mobile-web-app-title" content="GreenLog">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#DCC8AA">
-<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" href="icon-512.png?v=2">
 <title>GreenLog</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -90,7 +91,7 @@ h1,h2,h3,p{margin:0}
 .home .blob{position:absolute;z-index:0;pointer-events:none}
 .home .ttl{display:flex;align-items:center;justify-content:space-between;padding:20vh 0 0 21px}
 .home h1{font-family:"Caveat Brush",cursive;font-weight:400;font-size:80px;line-height:1;color:#2F4536;transform:rotate(-3deg);transform-origin:left center;letter-spacing:1px;white-space:nowrap;flex:none}
-.favs{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px 14px;width:322px;margin:12px auto 0}
+.favs{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:10px 14px;width:322px;margin:48px auto 0}
 .fav{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;width:98px}
 .fav .fn{font-weight:700;font-size:15px;max-width:98px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fav.empty .fn{color:var(--ink2);font-weight:400}
@@ -180,6 +181,9 @@ h1,h2,h3,p{margin:0}
 .dx .bd2 b{display:block;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dx .bd2 small{display:block;color:var(--ink2);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dx .minis{justify-content:flex-start;margin-top:6px}
+.dx .mrow{display:flex;align-items:center;gap:8px;margin-top:6px}
+.dx .mrow small{white-space:nowrap}
+.dx .mrow .minis{margin-top:0}
 .dx .mini{width:22px;height:22px}
 .dhead{text-align:center;padding-top:8px}
 .dhead h2{font-size:26px;margin-top:10px}
@@ -562,9 +566,9 @@ function vDex(){
   const m=ui.dexTab==='m',list=m?S.mdex:S.dex;
   const items=list.map(x=>{
     const ps=m?[]:x.plantIds.map(getPlant).filter(Boolean);
-    const cnt=m?S.dex.filter(d=>(d.mediaIds||[]).includes(x.id)).length:0;
+    const ds=m?S.dex.filter(d=>(d.mediaIds||[]).includes(x.id)):[];
     const snip=(x.traits||x.care||x.note||'').replace(/\s+/g,' ').slice(0,40);
-    return `<button class="dx" data-act="go" data-to="dex/${m?'m/':''}${x.id}" data-q="${esc((x.name+' '+(x.traits||'')+' '+(x.care||'')).toLowerCase())}">${avatar(x,64)}<span class="bd2"><b>${esc(x.name)}</b>${snip?`<small>${esc(snip)}</small>`:''}${m&&cnt?`<small>適合 ${cnt} 種植物</small>`:''}${ps.length?`<span class="minis">${ps.slice(0,5).map(p=>`<span class="mini">${p.avatar?`<img src="${p.avatar}" alt="">`:''}</span>`).join('')}${ps.length>5?`<span class="more">+${ps.length-5}</span>`:''}</span>`:''}</span>${icon('chev-r',18)}</button>`;
+    return `<button class="dx" data-act="go" data-to="dex/${m?'m/':''}${x.id}" data-q="${esc((x.name+' '+(x.traits||'')+' '+(x.care||'')).toLowerCase())}">${avatar(x,64)}<span class="bd2"><b>${esc(x.name)}</b>${snip?`<small>${esc(snip)}</small>`:''}${m&&ds.length?`<span class="mrow"><small>適合植物</small><span class="minis">${ds.slice(0,5).map(d=>`<span class="mini">${d.img?`<img src="${d.img}" alt="">`:''}</span>`).join('')}${ds.length>5?`<span class="more">+${ds.length-5}</span>`:''}</span></span>`:''}${ps.length?`<span class="minis">${ps.slice(0,5).map(p=>`<span class="mini">${p.avatar?`<img src="${p.avatar}" alt="">`:''}</span>`).join('')}${ps.length>5?`<span class="more">+${ps.length-5}</span>`:''}</span>`:''}</span>${icon('chev-r',18)}</button>`;
   }).join('');
   return `<main class="page bg-dex tabbed">
    <div class="decor" style="right:-34px;top:420px">${ill('monsteraG',150,{rot:24})}</div>
