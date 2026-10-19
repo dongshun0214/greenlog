@@ -83,6 +83,8 @@ h1,h2,h3,p{margin:0}
 .seg.sm button{flex:none;min-height:34px;padding:4px 16px;font-size:14px}
 .mline{margin-top:10px;font-size:14px;font-weight:700;line-height:1.7}
 .mlk{background:none;border:0;padding:4px 2px;font:inherit;color:var(--sage-d);text-decoration:underline;text-underline-offset:3px}
+.bar{height:12px;border:2px solid var(--ink);border-radius:8px;background:var(--cell);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--sage-d)}
 .dxbar{display:flex;align-items:center;gap:10px;margin:2px 0 16px}
 /* tab bar */
 .tabs{position:fixed;left:14px;right:14px;bottom:calc(var(--sab) + 12px);z-index:30;display:flex;gap:4px;background:var(--cream);border:2.5px solid var(--ink);border-radius:28px;padding:5px;box-shadow:3px 4px 0 var(--shadow)}
@@ -720,8 +722,29 @@ function backupSheet(){
     <p class="note-s" style="margin-top:0">資料只存在這支手機的這個瀏覽器裡。建議用 Safari 的「分享 → 加入主畫面」後再使用，並定期匯出備份。主畫面版和 Safari 的資料是分開的，要搬過去請先匯出再匯入。</p>
     <div class="btnrow" style="margin-top:14px"><button class="btn" data-act="exportData">匯出備份</button><label class="btn ghost" for="f-imp" style="cursor:pointer">匯入備份</label></div>
     <input id="f-imp" type="file" accept=".json,application/json" hidden data-chg="import">
-    <p class="note-s">目前共 ${S.plants.length} 株植物、${S.dex.length} 筆圖鑑。</p>
+    <div class="h3" style="margin-top:20px">${icon('cloud',22)}儲存空間</div>
+    <div id="usage"><p class="note-s" style="margin-top:0">計算中…</p></div>
    </div>`);
+  fillUsage();
+}
+const fmtB=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':Math.max(1,Math.round(n/1024))+' KB';
+async function fillUsage(){
+  const growth=S.plants.reduce((n,p)=>n+p.photos.length,0);
+  const others=S.plants.filter(p=>p.avatar).length+S.dex.filter(d=>d.img).length+S.mdex.filter(d=>d.img).length;
+  const own=new Blob([JSON.stringify(S)]).size;
+  let photoBytes=0;S.plants.forEach(p=>p.photos.forEach(ph=>{photoBytes+=Math.round((ph.img||'').length*0.75)}));
+  const avg=growth?photoBytes/growth:250*1024;
+  let est=null;try{if(navigator.storage&&navigator.storage.estimate)est=await navigator.storage.estimate()}catch(e){}
+  const row=(a,b)=>`<div class="pr"><span>${a}</span><b>${b}</b></div>`;
+  let h=row('成長照片',growth+' 張')+row('頭貼與圖鑑圖片',others+' 張')+row('植物／圖鑑',S.plants.length+' 株／'+(S.dex.length+S.mdex.length)+' 筆')+row('GreenLog 資料量','約 '+fmtB(own));
+  if(est&&est.quota){
+    const used=est.usage||0,left=Math.max(0,est.quota-used),pct=Math.min(100,Math.max(1,used/est.quota*100));
+    h+=`<div class="bar" style="margin:12px 0 8px"><i style="width:${pct.toFixed(1)}%"></i></div>`+row('此網站已用',fmtB(used))+row('剩餘可用（估計）','約 '+fmtB(left))+row('還能再上傳','約 '+Math.floor(left/avg).toLocaleString()+' 張照片');
+    h+=`<p class="note-s">照片會自動壓縮，平均一張約 ${fmtB(avg)}。上限是 iPhone 回報的估計值，會依手機剩餘空間變動，建議仍定期匯出備份。</p>`;
+  }else{
+    h+=`<p class="note-s">這支手機的瀏覽器沒有提供容量上限的資訊，所以只能顯示 GreenLog 目前用了多少。照片平均一張約 ${fmtB(avg)}，建議定期匯出備份。</p>`;
+  }
+  const el=$('#usage');if(el)el.innerHTML=h;
 }
 
 /* ============ 動作 ============ */
