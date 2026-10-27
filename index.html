@@ -402,6 +402,9 @@ let draft={};
 const getPlant=id=>S.plants.find(p=>p.id===id);
 const getDex=id=>S.dex.find(d=>d.id===id);
 const getMdex=id=>S.mdex.find(d=>d.id===id);
+let _co;try{_co=new Intl.Collator('zh-Hant-TW-u-co-zhuyin',{numeric:true,sensitivity:'base'})}catch(e){_co=new Intl.Collator('zh-Hant',{numeric:true})}
+const isCJK=s=>/[\u3400-\u9fff]/.test((s||'')[0]||'');
+const byName=(a,b)=>{const x=a.name||'',y=b.name||'',cx=isCJK(x),cy=isCJK(y);return cx!==cy?(cx?1:-1):_co.compare(x,y)};
 const col=k=>k==='m'?S.mdex:S.dex;
 const getItem=(id,k)=>col(k).find(x=>x.id===id);
 const dexOf=pid=>S.dex.filter(d=>d.plantIds.includes(pid));
@@ -568,10 +571,10 @@ function vOverview(){
 
 /* ============ 圖鑑 ============ */
 function vDex(){
-  const m=ui.dexTab==='m',list=m?S.mdex:S.dex;
+  const m=ui.dexTab==='m',list=[...(m?S.mdex:S.dex)].sort(byName);
   const items=list.map(x=>{
     const ps=m?[]:x.plantIds.map(getPlant).filter(Boolean);
-    const ds=m?S.dex.filter(d=>(d.mediaIds||[]).includes(x.id)):[];
+    const ds=m?S.dex.filter(d=>(d.mediaIds||[]).includes(x.id)).sort(byName):[];
     const snip=(x.traits||x.care||x.note||'').replace(/\s+/g,' ').slice(0,40);
     return `<button class="dx" data-act="go" data-to="dex/${m?'m/':''}${x.id}" data-q="${esc((x.name+' '+(x.traits||'')+' '+(x.care||'')).toLowerCase())}">${avatar(x,64)}<span class="bd2"><b>${esc(x.name)}</b>${snip?`<small>${esc(snip)}</small>`:''}${m&&ds.length?`<span class="mrow"><small>適合植物</small><span class="minis">${ds.slice(0,5).map(d=>`<span class="mini">${d.img?`<img src="${d.img}" alt="">`:''}</span>`).join('')}${ds.length>5?`<span class="more">+${ds.length-5}</span>`:''}</span></span>`:''}${ps.length?`<span class="minis">${ps.slice(0,5).map(p=>`<span class="mini">${p.avatar?`<img src="${p.avatar}" alt="">`:''}</span>`).join('')}${ps.length>5?`<span class="more">+${ps.length-5}</span>`:''}</span>`:''}</span>${icon('chev-r',18)}</button>`;
   }).join('');
@@ -591,12 +594,12 @@ function vDexItem(id,k){
   const prices=x.prices.filter(r=>r.m||r.p);
   let links='';
   if(m){
-    const ds=S.dex.filter(d=>(d.mediaIds||[]).includes(id));
+    const ds=S.dex.filter(d=>(d.mediaIds||[]).includes(id)).sort(byName);
     links=`<section class="card"><div class="h3">${icon('link',22)}適合的植物圖鑑 <span class="muted" style="font-size:14px;font-weight:400;margin-left:auto">${ds.length} 種</span></div>
      ${ds.length?`<div class="lgrid">${ds.map(d=>`<button class="pi" data-act="go" data-to="dex/${d.id}">${avatar(d,76)}<span class="nm">${esc(d.name)}</span></button>`).join('')}</div>`:'<p class="muted">還沒有植物圖鑑勾選這個介質，到植物圖鑑編輯時可以勾選</p>'}
     </section>`;
   }else{
-    const ps=x.plantIds.map(getPlant).filter(Boolean),ms=(x.mediaIds||[]).map(getMdex).filter(Boolean);
+    const ps=x.plantIds.map(getPlant).filter(Boolean),ms=(x.mediaIds||[]).map(getMdex).filter(Boolean).sort(byName);
     links=`<section class="card"><div class="h3">${icon('link',22)}我的植物 <span class="muted" style="font-size:14px;font-weight:400;margin-left:auto">${ps.length} 株</span></div>
      ${ps.length?`<div class="lgrid">${ps.map(p=>`<button class="pi" data-act="go" data-to="plant/${p.id}">${avatar(p,76)}<span class="nm">${esc(p.name)}</span></button>`).join('')}</div>`:'<p class="muted">還沒有連結自己的植物，按右上角編輯可以勾選</p>'}
     </section>
@@ -658,7 +661,7 @@ function plantForm(id){
     <label class="fl">種植日期<input id="f-date" type="date" value="${p?.plantDate||today()}"></label>
     <div class="fl">栽培方式<div class="seg" style="margin-top:6px" id="f-seg"><button class="${draft.method==='soil'?'on':''}" data-act="seg" data-v="soil">土培</button><button class="${draft.method==='water'?'on':''}" data-act="seg" data-v="water">水培</button></div></div>
     <div class="fl" id="f-media" style="${draft.method==='soil'?'':'display:none'}">介質（可複選）
-     ${S.mdex.length?S.mdex.map(m=>`<label class="chk">${avatar(m,40)}<span class="nm">${esc(m.name)}</span><input type="checkbox" name="pm" value="${m.id}" ${selM.has(m.id)?'checked':''}></label>`).join(''):'<p class="note-s">介質圖鑑還沒有資料，可以先直接輸入</p>'}
+     ${S.mdex.length?[...S.mdex].sort(byName).map(m=>`<label class="chk">${avatar(m,40)}<span class="nm">${esc(m.name)}</span><input type="checkbox" name="pm" value="${m.id}" ${selM.has(m.id)?'checked':''}></label>`).join(''):'<p class="note-s">介質圖鑑還沒有資料，可以先直接輸入</p>'}
      <input id="f-mtxt" value="${esc(p?.mediaText||'')}" placeholder="其他介質，用「、」分隔，例：水苔、樹皮" autocomplete="off" style="margin-top:10px">
     </div>
    </div>
@@ -707,7 +710,7 @@ function dexForm(id,k){
     <div class="fl">花市價格<div id="pr-rows">${priceRows()}</div><button class="btn ghost sm" style="margin-top:8px" data-act="addPrice">${icon('plus',16)}新增一筆價格</button></div>
     <label class="fl">備註<textarea id="d-note" placeholder="其他想記的事">${esc(x?.note||'')}</textarea></label>
     ${m?'':`<div class="fl">適合介質（可複選）
-     ${S.mdex.length?S.mdex.map(md=>`<label class="chk">${avatar(md,40)}<span class="nm">${esc(md.name)}</span><input type="checkbox" name="lm" value="${md.id}" ${lm.has(md.id)?'checked':''}></label>`).join(''):'<p class="note-s">還沒有介質圖鑑，先到圖鑑的「介質」分頁新增吧</p>'}
+     ${S.mdex.length?[...S.mdex].sort(byName).map(md=>`<label class="chk">${avatar(md,40)}<span class="nm">${esc(md.name)}</span><input type="checkbox" name="lm" value="${md.id}" ${lm.has(md.id)?'checked':''}></label>`).join(''):'<p class="note-s">還沒有介質圖鑑，先到圖鑑的「介質」分頁新增吧</p>'}
     </div>
     <div class="fl">連結我的植物（可複選）
      ${plants.length?plants.map(p=>`<label class="chk">${avatar(p,40)}<span class="nm">${esc(p.name)}</span><small>${p.method==='water'?'水培':'土培'}</small><input type="checkbox" name="lp" value="${p.id}" ${linked.has(p.id)?'checked':''}></label>`).join(''):`<p class="note-s">還沒有植物可以連結，先去新增植物吧</p>`}
