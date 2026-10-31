@@ -121,6 +121,9 @@ h1,h2,h3,p{margin:0}
 .phead{text-align:center;padding-top:16px}
 .phead .row{display:flex;align-items:center;justify-content:center;gap:6px}
 .phead h2{font-size:26px;margin-top:10px}
+.lfb{background:none;border:0;padding:0;width:56px;height:56px;display:grid;place-items:center;flex:none}
+.lfb:active .ill{transform:scale(.88)}
+.lfb:disabled{opacity:.35}
 .phead .days{margin-top:8px}
 .heartb{position:absolute;right:12px;top:12px;width:46px;height:46px;border-radius:50%;border:2.5px solid var(--ink);background:var(--cream);display:grid;place-items:center;color:var(--ink);padding:0}
 .heartb.on{background:var(--rose);color:var(--cream)}
@@ -513,7 +516,7 @@ function vPlant(id){
    <div class="top"><button class="ib" data-act="back" data-fb="list" aria-label="返回">${icon('back',24)}</button><div class="sp"></div><button class="ib" data-act="editPlant" data-id="${id}" aria-label="編輯">${icon('note',22)}</button></div>
    <section class="card phead" style="position:relative">
      <button class="heartb ${p.fav?'on':''}" data-act="toggleFav" aria-label="我的最愛">${icon('heart',24,p.fav?'fill':'')}</button>
-     <div class="row">${ill('leaf',44,{lf:G.g4,rot:-35})}${avatar(p,128)}${ill('leaf',44,{lf:G.g2,rot:35})}</div>
+     <div class="row"><button class="lfb" data-act="stepPlant" data-s="-1" aria-label="上一個植物" ${S.plants.length<2?'disabled':''}>${ill('leaf',44,{lf:G.g4,rot:-35})}</button>${avatar(p,128)}<button class="lfb" data-act="stepPlant" data-s="1" aria-label="下一個植物" ${S.plants.length<2?'disabled':''}>${ill('leaf',44,{lf:G.g2,rot:35})}</button></div>
      <h2>${esc(p.name)}</h2>
      <div class="days"><span class="chip">${icon('heart',16,'fill')} 已陪伴 ${daysTogether(p.plantDate)} 天</span></div>
      <div class="seg sm"><button class="${p.method==='soil'?'on':''}" data-act="setMethod" data-v="soil">${icon('repot',16)}土培</button><button class="${p.method==='water'?'on':''}" data-act="setMethod" data-v="water">${icon('water',16)}水培</button></div>
@@ -769,6 +772,13 @@ const A={
     if(d.id){const p=getPlant(d.id);Object.assign(p,{name,price,plantDate:date,avatar:draft.img,method:draft.method,mediaIds,mediaText})}
     else S.plants.push({id:uid(),name,price,plantDate:date,avatar:draft.img,method:draft.method,mediaIds,mediaText,fav:false,logs:[],photos:[]});
     persist();closeSheet();render();toast('已儲存');
+  },
+  stepPlant:d=>{
+    const order=[...S.plants.filter(q=>q.method==='soil').sort(plantSort),...S.plants.filter(q=>q.method==='water').sort(plantSort)];
+    const i=order.findIndex(q=>q.id===ui.pid);if(i<0||order.length<2)return;
+    const n=order[(i+(+d.s)+order.length)%order.length];
+    delete scrollMap['plant/'+n.id];window.scrollTo(0,0);
+    location.replace('#/plant/'+n.id);
   },
   toggleFav:()=>{const p=getPlant(ui.pid);if(!p)return;p.fav=!p.fav;persist();render();toast(p.fav?'已加入我的最愛':'已取消最愛')},
   setMethod:d=>{const p=getPlant(ui.pid);if(!p||p.method===d.v)return;p.method=d.v;persist();render();toast(d.v==='water'?'已改成水培':'已改成土培')},
