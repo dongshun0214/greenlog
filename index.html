@@ -593,6 +593,7 @@ function vDex(){
 function vDexItem(id,k){
   k=k==='m'?'m':'p';const m=k==='m';
   const x=getItem(id,k);if(!x)return vMissing();
+  ui.did=id;ui.dk=k;
   const blk=(t,v)=>v?`<section class="card"><div class="h3">${ill('leaf',24,{lf:G.g2})}${t}</div><p class="txt">${esc(v)}</p></section>`:'';
   const prices=x.prices.filter(r=>r.m||r.p);
   let links='';
@@ -613,7 +614,7 @@ function vDexItem(id,k){
   return `<main class="page bg-dex">
    <div class="decor" style="left:-30px;top:60px">${ill('monsteraG',150,{rot:-20})}</div>
    <div class="top"><button class="ib" data-act="back" data-fb="dex" aria-label="返回">${icon('back',24)}</button><div class="sp"></div><button class="ib" data-act="dexForm" data-id="${id}" data-k="${k}" aria-label="編輯">${icon('note',22)}</button></div>
-   <section class="card dhead"><div style="display:flex;justify-content:center;align-items:center;gap:6px">${ill('leaf',40,{lf:G.g4,rot:-35})}${avatar(x,120)}${ill('leaf',40,{lf:G.g2,rot:35})}</div><h2>${esc(x.name)}</h2></section>
+   <section class="card dhead"><div style="display:flex;justify-content:center;align-items:center;gap:6px"><button class="lfb" data-act="stepDex" data-s="-1" aria-label="上一個" ${col(k).length<2?'disabled':''}>${ill('leaf',40,{lf:G.g4,rot:-35})}</button>${avatar(x,120)}<button class="lfb" data-act="stepDex" data-s="1" aria-label="下一個" ${col(k).length<2?'disabled':''}>${ill('leaf',40,{lf:G.g2,rot:35})}</button></div><h2>${esc(x.name)}</h2></section>
    ${links}
    ${blk('特性',x.traits)}${blk(m?'使用方式':'照護方式',x.care)}
    ${prices.length?`<section class="card"><div class="h3">${ill('leaf',24,{lf:G.mus})}花市價格</div>${prices.map(r=>`<div class="pr"><span>${esc(r.m||'—')}</span><b>${esc(fmtPrice(r.p)||'—')}</b></div>`).join('')}</section>`:''}
@@ -697,14 +698,71 @@ function photoForm(){
 /* 圖鑑表單 */
 function priceRows(){return draft.prices.map((r,i)=>`<div class="prow"><input class="pm" value="${esc(r.m)}" placeholder="花市／店家" autocomplete="off"><input class="pp" value="${esc(r.p)}" placeholder="價格" inputmode="decimal" autocomplete="off"><button class="xb" style="width:46px;height:46px" data-act="delPrice" data-i="${i}" aria-label="移除">${icon('close',18)}</button></div>`).join('')}
 function syncPrices(){const ms=$$('#pr-rows .pm'),ps=$$('#pr-rows .pp');draft.prices=ms.map((m,i)=>({m:m.value,p:ps[i].value}))}
-function dexForm(id,k){
+const GL_LABELS=['名稱','特性','照護方式','使用方式','適合介質','花市價格','備註'];
+const normN=s=>String(s||'').replace(/\s+/g,'').toLowerCase();
+const isNone=s=>/^無(\s|[（(]|$)/.test(s)||/^(n\/a|none)$/i.test(s);
+function parseGuide(raw,k){
+  const re=new RegExp('^('+GL_LABELS.join('|')+')\\s*[：:]\\s*(.*)$');
+  const f={};let cur=null,found=0;
+  String(raw||'').replace(/\r/g,'').split('\n').forEach(line=>{
+    const t=line.replace(/\*\*/g,'').replace(/^\s*#{1,6}\s*/,'').trim();
+    if(/^[\s\-–—_=~*.·]{3,}$/.test(t))return;
+    const m=t.match(re);
+    if(m){cur=m[1];found++;(f[cur]=f[cur]||[]).push(m[2]);return}
+    if(cur)f[cur].push(t);
+  });
+  if(!found)return {error:'格式讀不出來，請確認貼的是 AI 給的整串文字'};
+  const val=n=>{const a=(f[n]||[]).slice();while(a.length&&!a[0])a.shift();while(a.length&&!a[a.length-1])a.pop();return a.join('\n').replace(/\n{3,}/g,'\n\n')};
+  const name=(val('名稱').split('\n')[0]||'').replace(/^[「『"“'\s]+|[」』"”'\s]+$/g,'');
+  if(!name)return {error:'找不到「名稱：」這一行，或名稱是空的'};
+  const cv=n=>{const v=val(n);return isNone(v)&&!v.includes('\n')?'':v};
+  const care=[cv('照護方式'),cv('使用方式')].filter(Boolean).join('\n');
+  const prices=[];
+  (f['花市價格']||[]).forEach(l=>{
+    l=l.replace(/^[•·\-–—*\s]+/,'').trim();
+    if(!l||isNone(l))return;
+    const i=Math.max(l.lastIndexOf('：'),l.lastIndexOf(':'));
+    if(i>=0)prices.push({m:l.slice(0,i).trim(),p:l.slice(i+1).trim()});
+    else if(/^[\d.,\s~\-]+$/.test(l))prices.push({m:'',p:l});
+    else prices.push({m:l,p:''});
+  });
+  const mediaIds=[],unmatched=[];
+  if(k==='p'){
+    const mv=val('適合介質').replace(/\n/g,'、');
+    if(mv&&!isNone(mv)){
+      mv.split(/[、,，;；\/]+/).map(s=>s.replace(/[（(].*?[）)]/g,'').replace(/^[•·\-–—*\s]+/,'').trim()).filter(Boolean).forEach(s=>{
+        const hit=S.mdex.find(d=>normN(d.name)===normN(s));
+        if(hit){if(!mediaIds.includes(hit.id))mediaIds.push(hit.id)}
+        else if(!unmatched.includes(s))unmatched.push(s);
+      });
+    }
+  }
+  const note=[cv('備註'),unmatched.length?'適合介質（未建檔）：'+unmatched.join('、'):''].filter(Boolean).join('\n');
+  return {name,traits:cv('特性'),care,note,prices,mediaIds,unmatched};
+}
+function dexForm(id,k,mode,keepImg){
   k=k==='m'?'m':'p';const m=k==='m',noun=m?'介質':'植物';
   const x=id?getItem(id,k):null;
-  draft={img:x?.img||'',prices:x?.prices?.length?x.prices.map(r=>({...r})):[{m:'',p:''}]};
+  mode=(!x&&mode==='auto')?'auto':'manual';
+  draft={img:keepImg||x?.img||'',prices:x?.prices?.length?x.prices.map(r=>({...r})):[{m:'',p:''}]};
+  const modeSeg=x?'':`<div class="seg" style="margin:6px 0 10px"><button class="${mode==='manual'?'on':''}" data-act="dexMode" data-m="manual" data-k="${k}">手動輸入</button><button class="${mode==='auto'?'on':''}" data-act="dexMode" data-m="auto" data-k="${k}">自動（貼上 AI 文字）</button></div>`;
+  if(mode==='auto'){
+    openSheet(`${shHead('新增'+noun+'圖鑑')}
+     <div class="sh-b">
+      ${modeSeg}
+      <label class="pick" for="f-img3">${pvBox(draft.img,104)}<span>點一下上傳圖片</span></label>
+      <input id="f-img3" type="file" accept="image/*" hidden data-chg="deximg">
+      <label class="fl">貼上 AI 給你的文字<textarea id="ai-text" style="min-height:220px" placeholder="名稱：…&#10;特性：…&#10;${m?'使用方式':'照護方式'}：…"></textarea></label>
+      <p class="note-s">只要有「名稱：」這一行就能新增，沒有的欄位會留空，之後可以再編輯。</p>
+     </div>
+     <div class="sh-f"><button class="btn ghost" data-act="closeSheet">取消</button><button class="btn" data-act="autoDex" data-k="${k}">送出</button></div>`);
+    return;
+  }
   const linked=new Set(x?.plantIds||[]),lm=new Set(x?.mediaIds||[]);
   const plants=[...S.plants].sort(plantSort);
   openSheet(`${shHead((x?'編輯':'新增')+noun+'圖鑑')}
    <div class="sh-b">
+    ${modeSeg}
     <label class="pick" for="f-img3">${pvBox(draft.img,104)}<span>點一下上傳圖片</span></label>
     <input id="f-img3" type="file" accept="image/*" hidden data-chg="deximg">
     <label class="fl">${noun}名稱<input id="d-name" value="${esc(x?.name||'')}" placeholder="${m?'例：培養土':'例：龜背芋'}" maxlength="30" autocomplete="off"></label>
@@ -773,6 +831,13 @@ const A={
     else S.plants.push({id:uid(),name,price,plantDate:date,avatar:draft.img,method:draft.method,mediaIds,mediaText,fav:false,logs:[],photos:[]});
     persist();closeSheet();render();toast('已儲存');
   },
+  stepDex:d=>{
+    const k=ui.dk==='m'?'m':'p',list=[...col(k)].sort(byName);
+    const i=list.findIndex(q=>q.id===ui.did);if(i<0||list.length<2)return;
+    const n=list[(i+(+d.s)+list.length)%list.length];
+    delete scrollMap['dex/'+(k==='m'?'m/':'')+n.id];window.scrollTo(0,0);
+    location.replace('#/dex/'+(k==='m'?'m/':'')+n.id);
+  },
   stepPlant:d=>{
     const order=[...S.plants.filter(q=>q.method==='soil').sort(plantSort),...S.plants.filter(q=>q.method==='water').sort(plantSort)];
     const i=order.findIndex(q=>q.id===ui.pid);if(i<0||order.length<2)return;
@@ -816,6 +881,19 @@ const A={
   delPhoto:d=>{const p=getPlant(ui.pid);if(!p)return;if(!confirm('刪除這張照片？'))return;p.photos=p.photos.filter(x=>x.id!==d.id);persist();render()},
   viewPhoto:d=>{const p=getPlant(ui.pid);const ph=p&&p.photos.find(x=>x.id===d.id);if(!ph)return;$('#viewer').innerHTML=`<img src="${ph.img}" alt="">`;$('#viewer').classList.add('on')},
   dexForm:d=>dexForm(d.id,d.k),
+  dexMode:d=>{const img=draft.img||'';dexForm('',d.k,d.m,img)},
+  autoDex:d=>{
+    const k=d.k==='m'?'m':'p',raw=($('#ai-text')||{}).value||'';
+    if(!raw.trim())return toast('請先貼上 AI 給你的文字');
+    const r=parseGuide(raw,k);
+    if(r.error)return toast(r.error);
+    if(col(k).some(q=>normN(q.name)===normN(r.name))&&!confirm(`已經有「${r.name}」的${k==='m'?'介質':'植物'}圖鑑了，仍要新增嗎？`))return;
+    const item={id:uid(),name:r.name,img:draft.img||'',traits:r.traits,care:r.care,note:r.note,prices:r.prices};
+    if(k==='p'){item.plantIds=[];item.mediaIds=r.mediaIds}
+    col(k).push(item);ui.dexTab=k;persist();closeSheet();
+    go('dex/'+(k==='m'?'m/':'')+item.id);
+    toast(`已新增「${r.name}」`+(r.unmatched&&r.unmatched.length?`，${r.unmatched.length} 個介質未建檔，已寫進備註`:''));
+  },
   dexTab:d=>{ui.dexTab=d.v==='m'?'m':'p';render()},
   addPrice:()=>{syncPrices();draft.prices.push({m:'',p:''});$('#pr-rows').innerHTML=priceRows()},
   delPrice:d=>{syncPrices();draft.prices.splice(+d.i,1);if(!draft.prices.length)draft.prices.push({m:'',p:''});$('#pr-rows').innerHTML=priceRows()},
