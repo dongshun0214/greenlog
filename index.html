@@ -116,6 +116,7 @@ h1,h2,h3,p{margin:0}
 .pi .dy{font-size:13px;color:var(--ink2)}
 .hb2{position:absolute;right:-4px;top:-4px;width:26px;height:26px;border-radius:50%;background:var(--rose);border:2px solid var(--ink);display:grid;place-items:center;color:var(--cream);z-index:3}
 .avw{position:relative}
+.wb{position:absolute;left:-4px;bottom:-4px;z-index:3;display:grid;border-radius:50%;box-shadow:0 0 0 2px var(--cream)}
 
 /* plant detail */
 .phead{text-align:center;padding-top:16px}
@@ -472,7 +473,7 @@ function fitTitle(){
 
 /* ============ 植物列表 ============ */
 function plantItem(p){
-  return `<button class="pi" data-act="go" data-to="plant/${p.id}"><span class="avw">${avatar(p,84)}${p.fav?`<span class="hb2">${icon('heart',14,'fill')}</span>`:''}</span><span class="nm">${esc(p.name)}</span><span class="dy">已陪伴 ${daysTogether(p.plantDate)} 天</span></button>`;
+  return `<button class="pi" data-act="go" data-to="plant/${p.id}"><span class="avw">${avatar(p,84)}${p.fav?`<span class="hb2">${icon('heart',14,'fill')}</span>`:''}${p.logs.some(l=>l.type==='water'&&l.date===today())?`<span class="wb" title="今天已澆水">${chip('water',28)}</span>`:''}</span><span class="nm">${esc(p.name)}</span><span class="dy">已陪伴 ${daysTogether(p.plantDate)} 天</span></button>`;
 }
 function vList(){
   const soil=S.plants.filter(p=>p.method==='soil').sort(plantSort),water=S.plants.filter(p=>p.method==='water').sort(plantSort);
