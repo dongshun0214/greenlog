@@ -142,6 +142,11 @@ h1,h2,h3,p{margin:0}
 .cd{min-height:64px;padding:3px 0 2px;border:2px solid transparent;border-radius:12px;background:var(--cell);display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;font-size:14px;line-height:1.1;min-width:0}
 .cd.today .dn{display:inline-grid;place-items:center;min-width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--cream)}
 .cd.sel{border-color:var(--ink);background:#E7D7A8}
+.cd.hasn,.cd.hasn.sel{background:#CFE2C6}
+.onote{display:block;width:100%;text-align:left;background:none;border:0;padding:7px 0;font:inherit;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.onote+.onote{border-top:1.5px dashed rgba(61,74,64,.3)}
+.sepn{border-top:2.5px dashed rgba(61,74,64,.45);margin:8px 0 0}
+.ib.addn{background:transparent;box-shadow:none;border-color:#4F6857;color:#4F6857;flex:none}
 .dis{display:flex;flex-wrap:wrap;justify-content:center;gap:2px;width:36px}
 .minis{display:flex;align-items:center;justify-content:center;flex-wrap:nowrap}
 .mini{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--ink);overflow:hidden;background:var(--sage);margin-left:-5px;flex:none}
@@ -230,7 +235,7 @@ h1,h2,h3,p{margin:0}
 #viewer{position:fixed;inset:0;z-index:120;background:rgba(30,36,32,.92);display:none;align-items:center;justify-content:center;padding:calc(var(--sat) + 12px) 12px calc(var(--sab) + 12px)}
 #viewer.on{display:flex}
 #viewer img{max-width:100%;max-height:100%;object-fit:contain;border-radius:12px}
-#toast{position:fixed;left:50%;top:calc(var(--sat) + 18px);transform:translateX(-50%);background:var(--ink);color:#FBF6EA;padding:10px 18px;border-radius:999px;z-index:200;font-weight:700;display:none;max-width:86vw;text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(var(--sab) + 96px);transform:translateX(-50%);background:var(--ink);color:#FBF6EA;padding:10px 18px;border-radius:999px;z-index:200;font-weight:700;display:none;max-width:86vw;text-align:center}
 #toast.on{display:block}
 </style>
 </head>
@@ -348,7 +353,7 @@ function avatar(o,s,ex=''){
 }
 
 /* ============ 資料儲存（IndexedDB） ============ */
-let S={plants:[],dex:[],mdex:[]};
+let S={plants:[],dex:[],mdex:[],notes:[]};
 const DBN='greenlog',STN='kv';
 function idb(){return new Promise((res,rej)=>{const r=indexedDB.open(DBN,1);r.onupgradeneeded=()=>r.result.createObjectStore(STN);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
 async function idbGet(){const db=await idb();return new Promise((res,rej)=>{const q=db.transaction(STN).objectStore(STN).get('state');q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)})}
@@ -357,10 +362,11 @@ async function loadState(){
   let d=null;
   try{d=await idbGet()}catch(e){}
   if(!d){try{d=JSON.parse(localStorage.getItem('greenlog')||'null')}catch(e){}}
-  if(d&&typeof d==='object'){S={plants:Array.isArray(d.plants)?d.plants:[],dex:Array.isArray(d.dex)?d.dex:[],mdex:Array.isArray(d.mdex)?d.mdex:[]}}
+  if(d&&typeof d==='object'){S={plants:Array.isArray(d.plants)?d.plants:[],dex:Array.isArray(d.dex)?d.dex:[],mdex:Array.isArray(d.mdex)?d.mdex:[],notes:Array.isArray(d.notes)?d.notes:[]}}
   S.plants.forEach(p=>{p.logs=p.logs||[];p.photos=p.photos||[];p.method=p.method==='water'?'water':'soil';p.mediaIds=p.mediaIds||[];p.mediaText=p.mediaText||''});
   S.dex.forEach(x=>{x.plantIds=x.plantIds||[];x.prices=x.prices||[];x.mediaIds=x.mediaIds||[]});
   S.mdex.forEach(x=>{x.prices=x.prices||[]});
+  S.notes.forEach(n=>{n.end=n.end||n.start});
 }
 let saveT=null;
 function persist(){clearTimeout(saveT);saveT=setTimeout(doSave,150)}
@@ -491,6 +497,17 @@ function vList(){
 }
 
 /* ============ 植物細節 ============ */
+function noteForm(id){
+  const n=id?S.notes.find(q=>q.id===id):null;
+  const s=n?n.start:ui.osel,e=n&&n.end!==n.start?n.end:'';
+  openSheet(`${shHead(n?'編輯備注':'新增備注')}
+   <div class="sh-b">
+    <label class="fl">開始日期<input id="n-s" type="date" value="${s}"></label>
+    <label class="fl">結束日期（選填，只有一天就不用填）<input id="n-e" type="date" value="${e}"></label>
+    <label class="fl">備注內容<textarea id="n-t" placeholder="例：11/10 到 11/14 出遠門，先把水澆好">${esc(n?n.text:'')}</textarea></label>
+   </div>
+   <div class="sh-f">${n?`<button class="btn warn" data-act="delNote" data-id="${n.id}">刪除</button>`:`<button class="btn ghost" data-act="closeSheet">取消</button>`}<button class="btn" data-act="saveNote" data-id="${id||''}">儲存</button></div>`);
+}
 function mediaLine(p){
   const ids=(p.mediaIds||[]).map(getMdex).filter(Boolean);
   const txt=String(p.mediaText||'').split(/[,，、]/).map(t=>t.trim()).filter(Boolean);
@@ -559,15 +576,19 @@ function vOverview(){
   const cell=(d,sel,tod)=>{
     const ids=Object.keys(by[d]||{}).map(getPlant).filter(Boolean);
     const sh=ids.slice(0,3);
-    return `<button class="cd ${sel?'sel':''} ${tod?'today':''}" data-act="pickDay" data-s="o" data-d="${d}"><span class="dn">${+d.slice(8)}</span>${ids.length?`<span class="minis">${sh.map(p=>`<span class="mini">${p.avatar?`<img src="${p.avatar}" alt="">`:''}</span>`).join('')}${ids.length>3?`<span class="more">+${ids.length-3}</span>`:''}</span>`:''}</button>`;
+    const hn=S.notes.some(n=>n.start<=d&&d<=n.end);
+    return `<button class="cd ${sel?'sel':''} ${tod?'today':''} ${hn?'hasn':''}" data-act="pickDay" data-s="o" data-d="${d}"><span class="dn">${+d.slice(8)}</span>${ids.length?`<span class="minis">${sh.map(p=>`<span class="mini">${p.avatar?`<img src="${p.avatar}" alt="">`:''}</span>`).join('')}${ids.length>3?`<span class="more">+${ids.length-3}</span>`:''}</span>`:''}</button>`;
   };
   const m=by[ui.osel]||{};
   const rows=Object.keys(m).map(getPlant).filter(Boolean).map(p=>`<button class="orow" data-act="go" data-to="plant/${p.id}">${avatar(p,44)}<span class="nm">${esc(p.name)}</span><span class="cs">${[...m[p.id]].map(k=>chip(k,22)).join('')}</span>${icon('chev-r',18)}</button>`).join('');
+  const nl=S.notes.filter(n=>n.start<=ui.osel&&ui.osel<=n.end);
+  const noteHtml=nl.map(n=>`<button class="onote" data-act="editNote" data-id="${n.id}">${esc(n.text)}</button>`).join('');
+  const bottom=rows||'<p class="muted" style="margin-top:8px">這天沒有照護紀錄</p>';
   return `<main class="page bg-ov tabbed">
    <div class="decor" style="left:-40px;top:520px">${ill('monsteraG',150,{rot:-20})}</div>
-   ${THead('Overview','',`${ill('succulent',56,{lf:G.g2,lf2:'#BFCDA9',pot:G.rose,st:'right:34px;bottom:2px'})}${ill('pothos',54,{lf:G.g1,lf2:G.mus,rot:20,st:'right:0;top:4px'})}`)}
+   <div class="trow2"><button class="ib" data-act="back" data-fb="" aria-label="返回">${icon('back',24)}</button><div class="tw" style="align-items:center;gap:12px"><h1 class="pt">Overview</h1><button class="ib addn" data-act="addNote" aria-label="新增備注">${icon('plus',24)}</button></div><div class="till">${ill('succulent',56,{lf:G.g2,lf2:'#BFCDA9',pot:G.rose,st:'right:34px;bottom:2px'})}${ill('pothos',54,{lf:G.g1,lf2:G.mus,rot:20,st:'right:0;top:4px'})}</div></div>
    <section class="card ov">${calendar('o',ui.om,ui.osel,cell)}
-     <div class="dayp"><div class="dayp-h"><b>${fmtDate(ui.osel)}</b></div>${rows||'<p class="muted">這天沒有照護紀錄</p>'}</div>
+     <div class="dayp"><div class="dayp-h"><b>${fmtDate(ui.osel)}</b></div>${nl.length?noteHtml+'<div class="sepn"></div>':''}${bottom}</div>
    </section>
    ${tabs('overview')}
   </main>`;
@@ -832,6 +853,19 @@ const A={
     else S.plants.push({id:uid(),name,price,plantDate:date,avatar:draft.img,method:draft.method,mediaIds,mediaText,fav:false,logs:[],photos:[]});
     persist();closeSheet();render();toast('已儲存');
   },
+  addNote:()=>noteForm(''),
+  editNote:d=>noteForm(d.id),
+  saveNote:d=>{
+    const s=$('#n-s').value,e0=$('#n-e').value,t=$('#n-t').value.trim();
+    if(!s)return toast('請選擇開始日期');
+    const e=e0||s;
+    if(e<s)return toast('結束日期不能比開始日期早');
+    if(!t)return toast('請輸入備注內容');
+    if(d.id){const n=S.notes.find(q=>q.id===d.id);if(n)Object.assign(n,{start:s,end:e,text:t})}
+    else S.notes.push({id:uid(),start:s,end:e,text:t});
+    ui.osel=s;ui.om=s.slice(0,7);persist();closeSheet();render();toast('已儲存');
+  },
+  delNote:d=>{if(!confirm('刪除這則備注？'))return;S.notes=S.notes.filter(q=>q.id!==d.id);persist();closeSheet();render()},
   stepDex:d=>{
     const k=ui.dk==='m'?'m':'p',list=[...col(k)].sort(byName);
     const i=list.findIndex(q=>q.id===ui.did);if(i<0||list.length<2)return;
@@ -940,12 +974,12 @@ document.addEventListener('change',async e=>{
       const d=JSON.parse(await file.text());
       if(!d||!Array.isArray(d.plants)||!Array.isArray(d.dex))throw new Error('format');
       if(!confirm(`匯入會取代目前的資料（${d.plants.length} 株植物、${d.dex.length} 筆圖鑑），確定嗎？`)){t.value='';return}
-      S={plants:d.plants,dex:d.dex,mdex:Array.isArray(d.mdex)?d.mdex:[]};await loadStateFix();await doSave();closeSheet();render();toast('已匯入');
+      S={plants:d.plants,dex:d.dex,mdex:Array.isArray(d.mdex)?d.mdex:[],notes:Array.isArray(d.notes)?d.notes:[]};await loadStateFix();await doSave();closeSheet();render();toast('已匯入');
     }
   }catch(err){toast(k==='import'?'檔案格式不對，無法匯入':'圖片讀取失敗，請換一張')}
   t.value='';
 });
-async function loadStateFix(){S.plants.forEach(p=>{p.logs=p.logs||[];p.photos=p.photos||[];p.method=p.method==='water'?'water':'soil';p.plantDate=p.plantDate||today();p.mediaIds=p.mediaIds||[];p.mediaText=p.mediaText||''});S.dex.forEach(x=>{x.plantIds=x.plantIds||[];x.prices=x.prices||[];x.mediaIds=x.mediaIds||[]});S.mdex.forEach(x=>{x.prices=x.prices||[]})}
+async function loadStateFix(){S.plants.forEach(p=>{p.logs=p.logs||[];p.photos=p.photos||[];p.method=p.method==='water'?'water':'soil';p.plantDate=p.plantDate||today();p.mediaIds=p.mediaIds||[];p.mediaText=p.mediaText||''});S.dex.forEach(x=>{x.plantIds=x.plantIds||[];x.prices=x.prices||[];x.mediaIds=x.mediaIds||[]});S.mdex.forEach(x=>{x.prices=x.prices||[]});S.notes.forEach(n=>{n.end=n.end||n.start})}
 document.addEventListener('input',e=>{
   if(e.target.id!=='q')return;
   const q=e.target.value.trim().toLowerCase();let n=0;
